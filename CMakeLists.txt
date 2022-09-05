@@ -8,10 +8,13 @@ set(CMAKE_BUILD_TYPE "debug")
 include(CTest)
 enable_testing()
 
+add_subdirectory("src/context")
+
 add_subdirectory("test")
-# link libraries to test/entry executable
 
 add_test("async_nested_call_test" async_test)
+add_test("context_test" context_test)
+add_test("spinlock_test" spinlock_test)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

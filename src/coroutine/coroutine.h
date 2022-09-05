@@ -23,8 +23,15 @@ class AsyncFuncPromise : public ValuePromiseBase<T> {
   }
 };
 
+class AsyncFuncBase {
+ public:
+  virtual void start() = 0;
+  virtual void resume() = 0;
+  virtual bool done() = 0;
+};
+
 template <typename T>
-class AsyncFunction {
+class AsyncFunction : public AsyncFuncBase {
   template <typename U>
   friend class AsyncFuncPromise;
 
@@ -34,6 +41,7 @@ class AsyncFunction {
   using promise_type = AsyncFuncPromise<T>;
 
   AsyncFunction() = delete;
+  AsyncFunction(const AsyncFunction&) = delete;
   AsyncFunction(AsyncFunction&& afn) {
     if (type_handler_) {
       type_handler_.destroy();
