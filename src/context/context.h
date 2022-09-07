@@ -34,7 +34,7 @@ class Task {
       : ctx_(ctx), func_(std::move(func)) {
     func_->start();
   }
-  Task(const Task&) = delete;
+  Task(Task&) = delete;
 
   size_t id() { return reinterpret_cast<size_t>(this); }
   void resume() { func_->resume(); }
@@ -58,7 +58,7 @@ class Worker {
 
  public:
   Worker(Context* ctx) : ctx_(ctx) {}
-  Worker(const Worker&) = delete;
+  Worker(Worker&) = delete;
 
   std::thread::id id() { return thread_.get_id(); }
   Status status() { return status_; }
@@ -82,6 +82,7 @@ class Context {
 
  public:
   Context(size_t worker_num);
+  Context(Context&) = delete;
   ~Context();
 
   template <typename AsyncFuncDerived>
@@ -96,7 +97,7 @@ class Context {
   }
 
   bool done() { return done_; }
-  
+
   TaskPointer this_running_task();
   void event_loop();
   void stop();
@@ -120,6 +121,7 @@ class Context {
 class Monitor {
  public:
   Monitor(Context* ctx) : ctx_(ctx) {}
+  Monitor(Monitor&) = delete;
 
   AsyncFunction<void> enter();
   AsyncFunction<void> exit();

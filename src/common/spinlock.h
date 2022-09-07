@@ -9,6 +9,7 @@ namespace cppgo {
 class SpinLock {
  public:
   SpinLock() : flag_(false) {}
+  SpinLock(SpinLock&) = delete;
 
   void lock() {
     bool expected = false;

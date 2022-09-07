@@ -42,7 +42,7 @@ void Context::event_loop() {
 }
 
 void Context::stop() {
-  DEBUG("eject context done", 0);
+  DEBUG("emit context stop signal", 0);
   done_ = true;
   for (auto& w : workers_) {
     w->join();
