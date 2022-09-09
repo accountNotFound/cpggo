@@ -48,6 +48,17 @@ void Worker::start() {
       }
       {
         std::unique_lock guard(ctx_->mtx_);
+        if (current->callbacks_.empty() && !ctx_->delegate_map_.empty()) {
+          auto& [task, callbacks] = *(ctx_->delegate_map_.begin());
+          DEBUG("worker {%u} start delegate task {%u} callbacks", tid,
+                task->id());
+          for (auto& fn : callbacks) {
+            fn();
+          }
+          ctx_->delegate_map_.erase(task);
+          DEBUG("worker {%u} delegate task {%u} callbacks end", tid,
+                current->id());
+        }
         if (!current->callbacks_.empty()) {
           DEBUG("worker {%u} start execute task {%u} callbacks", tid,
                 current->id());

@@ -1,7 +1,7 @@
 #include "context/context.h"
 
-#include <string>
 #include <chrono>
+#include <string>
 
 #include "stdio.h"
 
@@ -23,11 +23,16 @@ AsyncFunction<void> worker() {
     co_await monitor.enter();
     value++;
     // printf("value=%d\n", value);
-    co_await monitor.exit();
+    // co_await monitor.exit();
+
+    monitor.exit_nowait();
+    // test shows that exit_nowait() performance is better than co_await exit()
+    // on current worker schedule strategy
   }
   co_await monitor.enter();
   printf("final value=%d\n", value);
-  co_await monitor.exit();
+  // co_await monitor.exit();
+  monitor.exit_nowait();
   printf("test function end\n");
 }
 
@@ -35,7 +40,7 @@ int main() {
   for (int i = 0; i < coroutine_num; i++) {
     ctx.spawn(worker());
   }
-  while(!ctx.idle()){
+  while (!ctx.idle()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   ctx.stop();

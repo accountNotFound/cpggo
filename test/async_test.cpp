@@ -32,7 +32,7 @@ cppgo::AsyncFunction<void> biz() {
 
 int main() {
   auto e = biz();
-  for (e.start(); !e.done(); e.resume()) {
+  for (e.init(); !e.done(); e.resume()) {
     printf("main\n");
   }
   printf("async test end\n");

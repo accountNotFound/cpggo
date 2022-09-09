@@ -16,7 +16,7 @@ AsyncFunction<void> Monitor::enter() {
       }
     }
     auto current = ctx_->this_running_task();
-    current->callbacks_.push_back([this, &current]() {
+    current->add_callback([this, &current]() {
       this->blocked_set_.insert(current);
       ctx_->blocked_set_.insert(current);
       current->status_ = Task::Status::BLOCKED;
@@ -36,7 +36,7 @@ AsyncFunction<void> Monitor::exit() {
   // runnable task after idle_ becomes true
 
   auto current = ctx_->this_running_task();
-  current->callbacks_.push_back([this, &current]() {
+  current->add_callback([this, &current]() {
     ctx_->runnable_set_.insert(current);
     current->status_ = Task::Status::RUNNABLE;
     DEBUG("task {%u} [running] -> [runnable]", current->id());
@@ -55,7 +55,7 @@ AsyncFunction<void> Monitor::wait() {
   // task after idle_ becomes true
 
   auto current = ctx_->this_running_task();
-  current->callbacks_.push_back([this, &current]() {
+  current->add_callback([this, &current]() {
     ctx_->blocked_set_.insert(current);
     current->status_ = Task::Status::BLOCKED;
     DEBUG("task {%u} [running] -> [blocked]", current->id());
@@ -71,7 +71,7 @@ void Monitor::notify_one() {
   // no need to lock
   // simply add callback
   auto current = ctx_->this_running_task();
-  current->callbacks_.push_back([this]() {
+  current->add_callback([this]() {
     if (!this->blocked_set_.empty()) {
       auto next = *blocked_set_.begin();
       this->blocked_set_.erase(next);
@@ -81,6 +81,26 @@ void Monitor::notify_one() {
       DEBUG("task {%u} [blocked] -> [runnable]", next->id());
     }
   });
+}
+
+void Monitor::exit_nowait() {
+  {
+    std::unique_lock guard(mtx_);
+    idle_ = true;
+  }
+  DEBUG("task {%u} unlock", ctx_->this_running_task()->id());
+  // don't use callback to change idle_, since there need to be at least one
+  // runnable task after idle_ becomes true
+
+  auto current = ctx_->this_running_task();
+  notify_one();  // add notify callback
+
+  current->submit_callback_delegate();
+  // this exit_nowait() doesn't co_await to worker's schedule code, which means
+  // this thread will not execute this task's callbacks to update other tasks'
+  // status. 
+  // so you have to submit callbacks to context so that other worker can
+  // execute current task's callback
 }
 
 }  // namespace cppgo

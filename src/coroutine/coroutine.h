@@ -25,7 +25,7 @@ class AsyncFuncPromise : public ValuePromiseBase<T> {
 
 class AsyncFuncBase {
  public:
-  virtual void start() = 0;
+  virtual void init() = 0;
   virtual void resume() = 0;
   virtual bool done() = 0;
 };
@@ -56,7 +56,7 @@ class AsyncFunction : public AsyncFuncBase {
     }
   }
 
-  void start() {
+  void init() {
     type_handler_.promise().p_stack_ =
         new std::stack<RawHandler>({type_handler_});
   }
