@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "common/allocator.h"
 #include "common/spinlock.h"
 #include "coroutine/coroutine.h"
 
@@ -92,21 +93,13 @@ class Context {
  public:
   Context(size_t worker_num);
   Context(Context&) = delete;
-  ~Context();
-
-  template <typename AsyncFuncDerived>
-  requires std::is_base_of_v<AsyncFuncBase, AsyncFuncDerived>
-  void spawn(AsyncFuncDerived&& func) {
-    auto p_task =
-        new Task(this, std::make_unique<AsyncFuncDerived>(std::move(func)));
-    // delete in Worker::start() & Context::~Context
-    std::unique_lock guard(mtx_);
-    tasks_.insert(p_task);
-    runnable_set_.insert(p_task);
-  }
 
   bool done() { return done_; }
 
+  // it is meanfulless to support future or promise with return value in
+  // coroutine programming, instead you should simply co_await an async_function
+  // to get its return value
+  void spawn(AsyncFunction<void>&& func);
   TaskPointer this_running_task();
   void event_loop();
   void stop();
@@ -116,8 +109,8 @@ class Context {
   SpinLock mtx_;
 
   // resource pool
-  std::unordered_set<WorkerPointer> workers_;
-  std::unordered_set<TaskPointer> tasks_;
+  Allocator<Worker> workers_;
+  Allocator<Task> tasks_;
 
   // for tasks status change, point to object in resource pool
   std::unordered_set<TaskPointer> runnable_set_;

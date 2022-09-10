@@ -9,21 +9,18 @@ namespace cppgo {
 
 Context::Context(size_t worker_num) {
   for (int i = 0; i < worker_num; i++) {
-    workers_.insert(new Worker(this));
-    // delete in Context::~Context
+    workers_.create(this);
   }
   for (auto& w : workers_) {
     w->start();
   }
 }
 
-Context::~Context() {
-  for (auto& w : workers_) {
-    delete w;
-  }
-  for (auto& t : tasks_) {
-    delete t;
-  }
+void Context::spawn(AsyncFunction<void>&& func) {
+  std::unique_lock guard(mtx_);
+  auto p_task = tasks_.create(
+      this, std::make_unique<AsyncFunction<void>>(std::move(func)));
+  runnable_set_.insert(p_task);
 }
 
 // get current running task on this thread

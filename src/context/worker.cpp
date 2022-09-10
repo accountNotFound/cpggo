@@ -41,9 +41,7 @@ void Worker::start() {
         DEBUG("task {%u} done, resource clean", current->id());
         std::unique_lock guard(ctx_->mtx_);
         ctx_->running_map_.erase(current);
-        ctx_->tasks_.erase(current);
-        // new in Context::spawn()
-        delete current;
+        ctx_->tasks_.destroy(current);
         continue;
       }
       {
