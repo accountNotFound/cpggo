@@ -1,4 +1,5 @@
 #include "context/context.h"
+#include "context/monitor.h"
 
 #include <chrono>
 #include <string>
@@ -7,7 +8,7 @@
 
 using namespace cppgo;
 
-int thread_num = 8;
+int thread_num = 10;
 int coroutine_num = 3000;
 int loop_num = 100;
 
@@ -17,28 +18,22 @@ Monitor monitor(&ctx);
 
 int value = 0;
 
-AsyncFunction<void> worker() {
+AsyncFunction<void> foo() {
   printf("test function start\n");
   for (int i = 0; i < loop_num; i++) {
     co_await monitor.enter();
     value++;
-    // printf("value=%d\n", value);
-    // co_await monitor.exit();
-
-    monitor.exit_nowait();
-    // test shows that exit_nowait() performance is better than co_await exit()
-    // on current worker schedule strategy
+    monitor.exit();
   }
   co_await monitor.enter();
   printf("final value=%d\n", value);
-  // co_await monitor.exit();
-  monitor.exit_nowait();
+  monitor.exit();
   printf("test function end\n");
 }
 
 int main() {
   for (int i = 0; i < coroutine_num; i++) {
-    ctx.spawn(worker());
+    ctx.spawn(foo());
   }
   while (!ctx.idle()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

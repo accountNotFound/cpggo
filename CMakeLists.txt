@@ -9,12 +9,11 @@ include(CTest)
 enable_testing()
 
 add_subdirectory("src/context")
-add_subdirectory("src/synchronize")
 add_subdirectory("test")
 
-add_test("async_nested_call_test" async_test)
-add_test("context_test" context_test)
-add_test("spinlock_test" spinlock_test)
+add_test("coroutine-nested-call" coroutine_test)
+add_test("spinlock-benchmark" spinlock_test)
+add_test("monitor-benchmark" context_test)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

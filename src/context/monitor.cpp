@@ -1,106 +1,104 @@
+#include "monitor.h"
+
 #include "context.h"
+#include "task.h"
 
 // #define USE_DEBUG
 #include "common/log.h"
 
 namespace cppgo {
 
-AsyncFunction<void> Monitor::enter() {
-  while (true) {
-    {
-      std::unique_lock guard(mtx_);
-      if (idle_) {
-        idle_ = false;
-        DEBUG("task {%u} lock", ctx_->this_running_task()->id());
-        co_return;
-      }
-    }
-    auto current = ctx_->this_running_task();
-    current->add_callback([this, &current]() {
-      this->blocked_set_.insert(current);
-      ctx_->blocked_set_.insert(current);
-      current->status_ = Task::Status::BLOCKED;
-      DEBUG("task {%u} try lock, [running] -> [blocked]", current->id());
-    });
-    co_await std::suspend_always{};  // yield to scheduler to notify others
-  }
+SpinLock Monitor::cls_;
+Monitor::Id Monitor::cls_id_ = 0;
+
+Monitor::Monitor(Context* ctx) : ctx_(ctx) {
+  std::unique_lock guard(cls_);
+  id_ = cls_id_++;
 }
 
-AsyncFunction<void> Monitor::exit() {
-  {
-    std::unique_lock guard(mtx_);
-    idle_ = true;
-  }
-  DEBUG("task {%u} unlock", ctx_->this_running_task()->id());
-  // don't use callback to change idle_, since there need to be at least one
-  // runnable task after idle_ becomes true
-
+AsyncFunction<void> Monitor::enter() {
   auto current = ctx_->this_running_task();
-  current->add_callback([this, &current]() {
-    ctx_->runnable_set_.insert(current);
-    current->status_ = Task::Status::RUNNABLE;
-    DEBUG("task {%u} [running] -> [runnable]", current->id());
-  });
-  notify_one();                    // add notify callback
-  co_await std::suspend_always{};  // yield to scheduler to notify others
+  while (true) {
+    self_.lock();
+    if (!busy_flag_) {
+      current->callback_ = [this, current]() -> bool {
+        DEBUG("task {%u} lock success", current->id());
+        this->busy_flag_ = true;
+        this->self_.unlock();
+        return true;
+      };
+      co_return;
+    } else {
+      current->callback_ = [this, current]() -> bool {
+        DEBUG("task {%u} lock failed, [running] -> [blocked]", current->id());
+        {
+          std::unique_lock guard(this->ctx_->self_);
+          this->blocked_set_.insert(current);
+          current->change_status_(Task::Status::RNUNING, Task::Status::BLOCKED);
+        }
+        this->self_.unlock();
+        return false;
+      };
+      co_await std::suspend_always{};
+    }
+  }
 }
 
 AsyncFunction<void> Monitor::wait() {
-  {
-    std::unique_lock guard(mtx_);
-    idle_ = true;
-  }
-  DEBUG("task {%u} unlock", ctx_->this_running_task()->id());
-  // don't use callback, since there need to be at least one runnable
-  // task after idle_ becomes true
+  co_await block();
+  co_await enter();
+}
 
+AsyncFunction<void> Monitor::block() {
   auto current = ctx_->this_running_task();
-  current->add_callback([this, &current]() {
-    ctx_->blocked_set_.insert(current);
-    current->status_ = Task::Status::BLOCKED;
-    DEBUG("task {%u} [running] -> [blocked]", current->id());
-  });
-
-  // normally the notify_one() should be call before wait(), so there will be
-  // at least one runnable task
-
-  co_await std::suspend_always{};  // yield to scheduler to notify others
+  self_.lock();
+  current->callback_ = [this, current]() -> bool {
+    if (busy_flag_) {
+      busy_flag_ = false;
+      this->notify_one_with_lock_();
+    }
+    DEBUG("task {%u} wait, [running] -> [blocked]", current->id());
+    {
+      std::unique_lock guard(this->ctx_->self_);
+      this->blocked_set_.insert(current);
+      current->change_status_(Task::Status::RNUNING, Task::Status::BLOCKED);
+    }
+    this->self_.unlock();
+    return false;
+  };
+  co_await std::suspend_always{};
 }
 
 void Monitor::notify_one() {
-  // no need to lock
-  // simply add callback
-  auto current = ctx_->this_running_task();
-  current->add_callback([this]() {
-    if (!this->blocked_set_.empty()) {
-      auto next = *blocked_set_.begin();
-      this->blocked_set_.erase(next);
-      ctx_->blocked_set_.erase(next);
-      ctx_->runnable_set_.insert(next);
-      next->status_ = Task::Status::RUNNABLE;
-      DEBUG("task {%u} [blocked] -> [runnable]", next->id());
-    }
-  });
+  std::unique_lock guard(self_);
+  notify_one_with_lock_();
 }
 
-void Monitor::exit_nowait() {
-  {
-    std::unique_lock guard(mtx_);
-    idle_ = true;
-  }
-  DEBUG("task {%u} unlock", ctx_->this_running_task()->id());
-  // don't use callback to change idle_, since there need to be at least one
-  // runnable task after idle_ becomes true
-
+void Monitor::exit() {
   auto current = ctx_->this_running_task();
-  notify_one();  // add notify callback
+  {
+    std::unique_lock guard(self_);
+    busy_flag_ = false;
+    notify_one_with_lock_();
+    DEBUG("task {%u} unlock", current->id());
+  }
+}
 
-  current->submit_callback_delegate();
-  // this exit_nowait() doesn't co_await to worker's schedule code, which means
-  // this thread will not execute this task's callbacks to update other tasks'
-  // status. 
-  // so you have to submit callbacks to context so that other worker can
-  // execute current task's callback
+void Monitor::notify_one_with_lock_() {
+  auto current = ctx_->this_running_task();
+  {
+    std::unique_lock guard(ctx_->self_);
+    if (blocked_set_.empty() && busy_flag_) {
+      RAISE("invlalid notification");
+    }
+    DEBUG("len(monitor_blocked_set)=%d", blocked_set_.size());
+    if (!blocked_set_.empty()) {
+      auto next = *blocked_set_.begin();
+      DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
+      blocked_set_.erase(next);
+      next->change_status_(Task::Status::BLOCKED, Task::Status::RUNNABLE);
+    }
+  }
 }
 
 }  // namespace cppgo

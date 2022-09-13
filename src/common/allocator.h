@@ -11,8 +11,13 @@ class Allocator {
 
  public:
   template <typename... Args>
-  T* create(Args&& ...args) {
+  T* create(Args&&... args) {
     T* ptr = new T(std::forward<Args>(args)...);
+    objects_.insert(ptr);
+    return ptr;
+  }
+
+  T* add(T* ptr) {
     objects_.insert(ptr);
     return ptr;
   }
