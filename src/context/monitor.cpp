@@ -40,20 +40,20 @@ AsyncFunction<void> Monitor::wait() {
   co_await enter();
 }
 
-// this method simply add a notify callback function, which will be executed
-// when exit() or wait()
 void Monitor::notify_one() {
   std::unique_lock gaurd(mtx_);
   if (!notify_callback_queue_.empty()) {
     return;
   }
   notify_callback_queue_.push([this]() {
-    auto next = *blocked_set_.begin();
-    this->blocked_set_.erase(next);
-    ctx_->blocked_set_.erase(next);
-    ctx_->runnable_set_.insert(next);
-    next->status_ = Task::Status::RUNNABLE;
-    DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
+    if (!blocked_set_.empty()) {
+      auto next = *blocked_set_.begin();
+      this->blocked_set_.erase(next);
+      ctx_->blocked_set_.erase(next);
+      ctx_->runnable_set_.insert(next);
+      next->status_ = Task::Status::RUNNABLE;
+      DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
+    }
   });
 }
 
@@ -87,6 +87,18 @@ void Monitor::exit() {
     }
   }
   DEBUG("task {%u} unlock", current->id());
+}
+
+void Monitor::notify_one_for(Monitor& rhs) {
+  std::unique_lock guard(rhs.ctx_->mtx_);
+  if (!rhs.blocked_set_.empty()) {
+    auto next = *rhs.blocked_set_.begin();
+    rhs.blocked_set_.erase(next);
+    rhs.ctx_->blocked_set_.erase(next);
+    rhs.ctx_->runnable_set_.insert(next);
+    next->status_ = Task::Status::RUNNABLE;
+    DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
+  }
 }
 
 }  // namespace cppgo

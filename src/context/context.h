@@ -121,8 +121,14 @@ class Monitor {
 
   AsyncFunction<void> enter();
   AsyncFunction<void> wait();
+
+  // this method simply add a notify callback function, which will be executed
+  // when exit() or wait()
   void notify_one();
   void exit();
+
+  // notify another monitor's task in this monitor's critical zone
+  void notify_one_for(Monitor& monitor);
 
  private:
   Context* ctx_;  // just reference
