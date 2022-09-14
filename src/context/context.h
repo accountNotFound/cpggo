@@ -42,18 +42,11 @@ class Task {
   bool done() { return func_->done(); }
   Status status() { return status_; }
 
-  // funtion added by this method will be executed when this running task
-  // co_await, normally use to change relevant tasks' status
-  void add_callback(std::function<void()>&& fn) { callbacks_.push_back(fn); }
-
-  // you should make sure that this running task can continue to be executed
-  // after call this method
-  void submit_callback_delegate();
-
  private:
   Context* ctx_;  // just reference
   std::unique_ptr<AsyncFuncBase> func_;
-  std::vector<std::function<void()>> callbacks_;
+  std::function<void()> callback_;  // only use to update this task's status
+                                    // called by worker with context's mutex
   Status status_ = Status::RUNNABLE;
 };
 
@@ -116,9 +109,6 @@ class Context {
   std::unordered_set<TaskPointer> runnable_set_;
   std::unordered_set<TaskPointer> blocked_set_;
   std::unordered_map<TaskPointer, WorkerPointer> running_map_;
-
-  std::unordered_map<TaskPointer, std::vector<std::function<void()>>>
-      delegate_map_;
 
   bool done_ = false;
 };
