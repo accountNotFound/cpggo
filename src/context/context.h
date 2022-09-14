@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -119,16 +120,21 @@ class Monitor {
   Monitor(Monitor&) = delete;
 
   AsyncFunction<void> enter();
-  AsyncFunction<void> exit();
   AsyncFunction<void> wait();
   void notify_one();
-  void exit_nowait();
+  void exit();
 
  private:
   Context* ctx_;  // just reference
   std::unordered_set<Context::TaskPointer> blocked_set_;
 
-  SpinLock mtx_;  // just protect idle_
+  // once notify_one() is called, it will push a
+  // callback in this queue.
+  // these functions will be called with context's
+  // mutex when exit() or wait().
+  std::queue<std::function<void()>> notify_callback_queue_;
+
+  SpinLock mtx_;  // just protect members below
                   // the blocked_set_ will  be protected by ctx_->mtx_
   bool idle_ = true;
 };

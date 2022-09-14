@@ -23,16 +23,11 @@ AsyncFunction<void> foo() {
     co_await monitor.enter();
     value++;
     // printf("value=%d\n", value);
-    // co_await monitor.exit();
-
-    monitor.exit_nowait();
-    // test shows that exit_nowait() performance is better than co_await exit()
-    // on current worker schedule strategy
+    monitor.exit();
   }
   co_await monitor.enter();
   printf("final value=%d\n", value);
-  // co_await monitor.exit();
-  monitor.exit_nowait();
+  monitor.exit();
   printf("test function end\n");
 }
 
