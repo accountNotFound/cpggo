@@ -17,7 +17,7 @@ Monitor monitor(&ctx);
 
 int value = 0;
 
-AsyncFunction<void> worker() {
+AsyncFunction<void> foo() {
   printf("test function start\n");
   for (int i = 0; i < loop_num; i++) {
     co_await monitor.enter();
@@ -38,7 +38,7 @@ AsyncFunction<void> worker() {
 
 int main() {
   for (int i = 0; i < coroutine_num; i++) {
-    ctx.spawn(worker());
+    ctx.spawn(foo());
   }
   while (!ctx.idle()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
