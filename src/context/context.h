@@ -11,6 +11,7 @@
 
 #include "common/allocator.h"
 #include "common/spinlock.h"
+#include "common/random_set.h"
 #include "coroutine/coroutine.h"
 
 namespace cppgo {
@@ -107,8 +108,8 @@ class Context {
   Allocator<Task> tasks_;
 
   // for tasks status change, point to object in resource pool
-  std::unordered_set<TaskPointer> runnable_set_;
-  std::unordered_set<TaskPointer> blocked_set_;
+  RandomSet<TaskPointer> runnable_set_;
+  RandomSet<TaskPointer> blocked_set_;
   std::unordered_map<TaskPointer, WorkerPointer> running_map_;
 
   bool done_ = false;
@@ -132,17 +133,17 @@ class Monitor {
 
  private:
   Context* ctx_;  // just reference
-  std::unordered_set<Context::TaskPointer> blocked_set_;
+  RandomSet<Context::TaskPointer> blocked_set_;
+
+  SpinLock mtx_;  // just protect members below
+                  // the blocked_set_ will  be protected by ctx_->mtx_
+  bool idle_ = true;
 
   // once notify_one() is called, it will push a
   // callback in this queue.
   // these functions will be called with context's
   // mutex when exit() or wait().
   std::queue<std::function<void()>> notify_callback_queue_;
-
-  SpinLock mtx_;  // just protect members below
-                  // the blocked_set_ will  be protected by ctx_->mtx_
-  bool idle_ = true;
 };
 
 }  // namespace cppgo

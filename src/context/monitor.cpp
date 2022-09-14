@@ -47,7 +47,7 @@ void Monitor::notify_one() {
   }
   notify_callback_queue_.push([this]() {
     if (!blocked_set_.empty()) {
-      auto next = *blocked_set_.begin();
+      auto next = blocked_set_.get_one();
       this->blocked_set_.erase(next);
       ctx_->blocked_set_.erase(next);
       ctx_->runnable_set_.insert(next);
@@ -68,7 +68,7 @@ void Monitor::exit() {
     if (notify_callback_queue_.empty()) {
       notify_callback_queue_.push([this]() {
         if (!blocked_set_.empty()) {
-          auto next = *blocked_set_.begin();
+          auto next = blocked_set_.get_one();
           this->blocked_set_.erase(next);
           ctx_->blocked_set_.erase(next);
           ctx_->runnable_set_.insert(next);
@@ -92,7 +92,7 @@ void Monitor::exit() {
 void Monitor::notify_one_for(Monitor& rhs) {
   std::unique_lock guard(rhs.ctx_->mtx_);
   if (!rhs.blocked_set_.empty()) {
-    auto next = *rhs.blocked_set_.begin();
+    auto next = rhs.blocked_set_.get_one();
     rhs.blocked_set_.erase(next);
     rhs.ctx_->blocked_set_.erase(next);
     rhs.ctx_->runnable_set_.insert(next);

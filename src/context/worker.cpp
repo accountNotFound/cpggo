@@ -16,7 +16,7 @@ void Worker::start() {
       {
         std::unique_lock guard(ctx_->mtx_);
         if (!ctx_->runnable_set_.empty()) {
-          current = *ctx_->runnable_set_.begin();
+          current = ctx_->runnable_set_.get_one();
           ctx_->runnable_set_.erase(current);
         }
       }

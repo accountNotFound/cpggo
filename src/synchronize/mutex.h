@@ -7,8 +7,7 @@ class Mutex {
   Mutex(Context* ctx) : monitor_(ctx) {}
 
   AsyncFunction<void> lock() { co_await monitor_.enter(); }
-  AsyncFunction<void> unlock() { co_await monitor_.exit(); }
-  void unlock_nowait() { monitor_.exit_nowait(); }
+  void unlock() { monitor_.exit(); }
 
  protected:
   Monitor monitor_;
@@ -30,13 +29,13 @@ class ConditionVariable : public Mutex {
  * co_await mtx.lock();
  * LockGuard guard(mtx);
  * ...
- * 
+ *
  * then, you don't need to call mtx.unlock() explicitly anymore
  */
 class LockGuard {
  public:
   LockGuard(Mutex& mutex) : mutex_(&mutex) {}
-  ~LockGuard() { mutex_->unlock_nowait(); }
+  ~LockGuard() { mutex_->unlock(); }
 
  private:
   Mutex* mutex_;
