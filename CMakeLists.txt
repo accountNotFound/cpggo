@@ -9,7 +9,6 @@ include(CTest)
 enable_testing()
 
 add_subdirectory("src/context")
-add_subdirectory("src/synchronize")
 add_subdirectory("test")
 
 add_test("async_nested_call_test" async_test)
