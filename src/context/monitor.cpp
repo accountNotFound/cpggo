@@ -29,7 +29,11 @@ AsyncFunction<void> Monitor::enter() {
 
 AsyncFunction<void> Monitor::wait() {
   auto current = ctx_->this_running_task();
-  exit();
+  {
+    std::unique_lock guard(mtx_);
+    idle_ = true;
+    notify_one();
+  }
   current->callback_ = [this, &current]() {
     this->blocked_set_.insert(current);
     ctx_->blocked_set_.insert(current);
@@ -41,64 +45,28 @@ AsyncFunction<void> Monitor::wait() {
 }
 
 void Monitor::notify_one() {
-  std::unique_lock gaurd(mtx_);
-  if (!notify_callback_queue_.empty()) {
-    return;
+  // notify one immediately, though task notified may be blocked again
+  std::unique_lock guard(ctx_->mtx_);
+  if (!blocked_set_.empty()) {
+    auto next = *blocked_set_.begin();
+    this->blocked_set_.erase(next);
+    ctx_->blocked_set_.erase(next);
+    ctx_->runnable_set_.insert(next);
+    next->status_ = Task::Status::RUNNABLE;
+    DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
   }
-  notify_callback_queue_.push([this]() {
-    if (!blocked_set_.empty()) {
-      auto next = blocked_set_.get_one();
-      this->blocked_set_.erase(next);
-      ctx_->blocked_set_.erase(next);
-      ctx_->runnable_set_.insert(next);
-      next->status_ = Task::Status::RUNNABLE;
-      DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
-    }
-  });
 }
 
 void Monitor::exit() {
   auto current = ctx_->this_running_task();
-  std::queue<std::function<void()>> callback_queue;
   ASSERT(current->callback_ == nullptr, "callback is not empty");
   ASSERT(idle_ == false, "exit monitor without lock");
   {
     std::unique_lock guard(mtx_);
     idle_ = true;
-    if (notify_callback_queue_.empty()) {
-      notify_callback_queue_.push([this]() {
-        if (!blocked_set_.empty()) {
-          auto next = blocked_set_.get_one();
-          this->blocked_set_.erase(next);
-          ctx_->blocked_set_.erase(next);
-          ctx_->runnable_set_.insert(next);
-          next->status_ = Task::Status::RUNNABLE;
-          DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
-        }
-      });
-    }
-    callback_queue.swap(notify_callback_queue_);
-  }
-  {
-    std::unique_lock guard(ctx_->mtx_);
-    while (!callback_queue.empty()) {
-      callback_queue.front()();
-      callback_queue.pop();
-    }
+    notify_one();
   }
   DEBUG("task {%u} unlock", current->id());
-}
-
-void Monitor::notify_one_for(Monitor& rhs) {
-  std::unique_lock guard(rhs.ctx_->mtx_);
-  if (!rhs.blocked_set_.empty()) {
-    auto next = rhs.blocked_set_.get_one();
-    rhs.blocked_set_.erase(next);
-    rhs.ctx_->blocked_set_.erase(next);
-    rhs.ctx_->runnable_set_.insert(next);
-    next->status_ = Task::Status::RUNNABLE;
-    DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
-  }
 }
 
 }  // namespace cppgo

@@ -11,7 +11,6 @@
 
 #include "common/allocator.h"
 #include "common/spinlock.h"
-#include "common/random_set.h"
 #include "coroutine/coroutine.h"
 
 namespace cppgo {
@@ -84,6 +83,7 @@ class Context {
  public:
   using TaskPointer = Task*;
   using WorkerPointer = Worker*;
+  using MonitorPointer = Monitor*;
 
  public:
   Context(size_t worker_num);
@@ -108,8 +108,8 @@ class Context {
   Allocator<Task> tasks_;
 
   // for tasks status change, point to object in resource pool
-  RandomSet<TaskPointer> runnable_set_;
-  RandomSet<TaskPointer> blocked_set_;
+  std::unordered_set<TaskPointer> runnable_set_;
+  std::unordered_set<TaskPointer> blocked_set_;
   std::unordered_map<TaskPointer, WorkerPointer> running_map_;
 
   bool done_ = false;
@@ -122,28 +122,19 @@ class Monitor {
 
   AsyncFunction<void> enter();
   AsyncFunction<void> wait();
-
-  // this method simply add a notify callback function, which will be executed
-  // when exit() or wait()
   void notify_one();
   void exit();
 
-  // notify another monitor's task in this monitor's critical zone
-  void notify_one_for(Monitor& monitor);
-
  private:
-  Context* ctx_;  // just reference
-  RandomSet<Context::TaskPointer> blocked_set_;
+  // just reference
+  Context* ctx_;
 
-  SpinLock mtx_;  // just protect members below
-                  // the blocked_set_ will  be protected by ctx_->mtx_
+  // the blocked_set_ will be protected by ctx_->mtx_
+  std::unordered_set<Context::TaskPointer> blocked_set_;
+
+  // just protect idle_
+  SpinLock mtx_;
   bool idle_ = true;
-
-  // once notify_one() is called, it will push a
-  // callback in this queue.
-  // these functions will be called with context's
-  // mutex when exit() or wait().
-  std::queue<std::function<void()>> notify_callback_queue_;
 };
 
 }  // namespace cppgo

@@ -16,7 +16,7 @@ void Worker::start() {
       {
         std::unique_lock guard(ctx_->mtx_);
         if (!ctx_->runnable_set_.empty()) {
-          current = ctx_->runnable_set_.get_one();
+          current = *ctx_->runnable_set_.begin();
           ctx_->runnable_set_.erase(current);
         }
       }
@@ -35,17 +35,15 @@ void Worker::start() {
       }
 
       DEBUG("worker {%u} start execute task {%u}", tid, current->id());
-      current->resume();
+      while (!current->done() && current->callback_ == nullptr) {
+        current->resume();
+      }
       DEBUG("worker {%u} execute task {%u} end", tid, current->id());
 
       {
         std::unique_lock guard(ctx_->mtx_);
         ctx_->running_map_.erase(current);
         DEBUG("worker {%u} unbind with {%u}", tid, current->id());
-      }
-
-      {
-        std::unique_lock guard(ctx_->mtx_);
 
         ASSERT(!(ctx_->runnable_set_.count(current)) &&
                    !(ctx_->blocked_set_.count(current)),
@@ -60,7 +58,11 @@ void Worker::start() {
           // use current's callback to update current's status
           DEBUG("worker {%u} start callback task {%u}", tid, current->id());
           current->callback_();
+
+          // NOTE: is it necessary to destroy callback_ ?
+          // e.g. using operator delete or deconstructor
           current->callback_ = nullptr;
+
           DEBUG("worker {%u} callback task {%u} end", tid, current->id());
         } else {
           // set current to runnable

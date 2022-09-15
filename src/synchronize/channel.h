@@ -33,7 +33,7 @@ class Channel {
           w_idx_ = (w_idx_ + 1) % N;
           inserted = true;
         }
-        w_mon_.notify_one_for(r_mon_);
+        r_mon_.notify_one();
       }
       if (inserted) {
         break;
@@ -58,7 +58,7 @@ class Channel {
           r_idx_ = (r_idx_ + 1) % N;
           got = true;
         }
-        r_mon_.notify_one_for(w_mon_);
+        w_mon_.notify_one();
       }
       if (got) {
         break;
