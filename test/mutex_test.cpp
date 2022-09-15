@@ -1,8 +1,9 @@
-#include "context/context.h"
+#include "synchronize/mutex.h"
 
 #include <chrono>
 #include <string>
 
+#include "context/context.h"
 #include "stdio.h"
 
 using namespace cppgo;
@@ -13,21 +14,21 @@ int loop_num = 100;
 
 Context ctx(thread_num);
 
-Monitor monitor(&ctx);
+Mutex mtx(&ctx);
 
 int value = 0;
 
 AsyncFunction<void> foo() {
   printf("test function start\n");
   for (int i = 0; i < loop_num; i++) {
-    co_await monitor.enter();
+    co_await mtx.lock();
     value++;
     // printf("value=%d\n", value);
-    monitor.exit();
+    mtx.unlock();
   }
-  co_await monitor.enter();
+  co_await mtx.lock();
   printf("final value=%d\n", value);
-  monitor.exit();
+  mtx.unlock();
   printf("test function end\n");
 }
 

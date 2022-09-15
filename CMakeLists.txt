@@ -13,9 +13,9 @@ add_subdirectory("src/synchronize")
 add_subdirectory("test")
 
 add_test("async_nested_call_test" async_test)
-add_test("context_test" context_test)
-add_test("spinlock_test" spinlock_test)
-add_test("channel_test" channel_test)
+add_test("spinlock_benchmark_test" spinlock_test)
+add_test("cppgo_mutex_test" mutex_test)
+add_test("cppgo_channel_test" channel_test)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

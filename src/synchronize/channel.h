@@ -1,83 +1,70 @@
-#include <array>
+#include <queue>
 
-#define USE_DEBUG
+// #define USE_DEBUG
 #include "common/log.h"
 #include "common/spinlock.h"
 #include "context/context.h"
+#include "coroutine/coroutine.h"
 
 namespace cppgo {
 
 template <typename T, size_t N = 1>
 class Channel {
  public:
-  Channel(Context* ctx)
-      : ctx_(ctx),
-        r_mon_(Monitor(ctx)),
-        w_mon_(Monitor(ctx)),
-        r_idx_(0),
-        w_idx_(0) {
-    for (int i = 0; i < N; i++) {
-      buffer_[i] = nullptr;
-    }
-  }
-  Channel(Channel&) = delete;
+  Channel(Context* ctx) : ctx_(ctx), reader_(ctx), writer_(ctx) {}
 
-  AsyncFunction<void> send(T&& data) {
-    co_await w_mon_.enter();
+  AsyncFunction<void> send(const T& data) {
+    auto current = ctx_->this_running_task();
     while (true) {
-      bool inserted = false;
+      bool ok = false;
       {
         std::unique_lock guard(mtx_);
-        if (!buffer_[w_idx_]) {
-          buffer_[w_idx_] = new T(std::move(data));
-          w_idx_ = (w_idx_ + 1) % N;
-          inserted = true;
+        if (buffer_.size() < N) {
+          buffer_.push(data);
+          ok = true;
         }
-        r_mon_.notify_one();
       }
-      if (inserted) {
-        break;
+      reader_.notify_one();
+      if (ok) {
+        DEBUG("task {%u} write finish", current->id());
+        co_return;
       } else {
-        co_await w_mon_.wait();
+        DEBUG("task {%u} write fail, hang up", current->id());
+        co_await writer_.await();
       }
     }
-    w_mon_.exit();
   }
 
   AsyncFunction<T> recv() {
-    T data;
-    co_await r_mon_.enter();
+    T res;
+    auto current = ctx_->this_running_task();
     while (true) {
-      bool got = false;
+      bool ok = false;
       {
         std::unique_lock guard(mtx_);
-        if (buffer_[r_idx_]) {
-          data = std::move(*buffer_[r_idx_]);
-          delete buffer_[r_idx_];
-          buffer_[r_idx_] = nullptr;
-          r_idx_ = (r_idx_ + 1) % N;
-          got = true;
+        if (!buffer_.empty()) {
+          res = std::move(buffer_.front());
+          buffer_.pop();
+          ok = true;
         }
-        w_mon_.notify_one();
       }
-      if (got) {
-        break;
+      writer_.notify_one();
+      if (ok) {
+        DEBUG("task {%u} read finish", current->id());
+        co_return std::move(res);
       } else {
-        co_await r_mon_.wait();
+        DEBUG("task {%u} read fail, hang up", current->id());
+        co_await reader_.await();
       }
     }
-    r_mon_.exit();
-    co_return std::move(data);
   }
 
  private:
   Context* ctx_;
   SpinLock mtx_;
-  std::array<T*, N> buffer_;
-  Monitor r_mon_;
-  Monitor w_mon_;
-  size_t r_idx_;
-  size_t w_idx_;
+  HangupCtrl reader_;
+  HangupCtrl writer_;
+  std::queue<T> buffer_;
 };
 
 }  // namespace cppgo

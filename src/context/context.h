@@ -6,10 +6,10 @@
 #include <queue>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "common/allocator.h"
+#include "common/refset.h"
 #include "common/spinlock.h"
 #include "coroutine/coroutine.h"
 
@@ -18,11 +18,11 @@ namespace cppgo {
 class Task;
 class Worker;
 class Context;
-class Monitor;
+class HangupCtrl;
 
 class Task {
   friend class Worker;
-  friend class Monitor;
+  friend class HangupCtrl;
 
  public:
   enum Status {
@@ -78,12 +78,11 @@ class Worker {
 class Context {
   friend class Task;
   friend class Worker;
-  friend class Monitor;
+  friend class HangupCtrl;
 
  public:
   using TaskPointer = Task*;
   using WorkerPointer = Worker*;
-  using MonitorPointer = Monitor*;
 
  public:
   Context(size_t worker_num);
@@ -108,33 +107,34 @@ class Context {
   Allocator<Task> tasks_;
 
   // for tasks status change, point to object in resource pool
-  std::unordered_set<TaskPointer> runnable_set_;
-  std::unordered_set<TaskPointer> blocked_set_;
+  RefSet<Task> runnable_set_;
+  RefSet<Task> blocked_set_;
   std::unordered_map<TaskPointer, WorkerPointer> running_map_;
+
+  // notify on empty HangupCtrl will be add to this map for execution later
+  RefSet<HangupCtrl> may_dead_set_;
 
   bool done_ = false;
 };
 
-class Monitor {
- public:
-  Monitor(Context* ctx) : ctx_(ctx) {}
-  Monitor(Monitor&) = delete;
+class HangupCtrl {
+  friend class Worker;
 
-  AsyncFunction<void> enter();
-  AsyncFunction<void> wait();
-  void notify_one();
-  void exit();
+ public:
+  HangupCtrl(Context* ctx) : ctx_(ctx) {}
+  ~HangupCtrl() { release(); }
+
+  std::suspend_always await();
+  HangupCtrl& notify_one();
+  void release();
 
  private:
-  // just reference
   Context* ctx_;
+  RefSet<Task> blocked_set_;
 
-  // the blocked_set_ will be protected by ctx_->mtx_
-  std::unordered_set<Context::TaskPointer> blocked_set_;
-
-  // just protect idle_
-  SpinLock mtx_;
-  bool idle_ = true;
+  // see notes in "src/synchronize/mutex.cpp" to get detail why notify_func_ need
+  // to be stored
+  std::function<void()> notify_func_;
 };
 
 }  // namespace cppgo

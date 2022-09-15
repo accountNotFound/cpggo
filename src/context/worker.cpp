@@ -16,8 +16,24 @@ void Worker::start() {
       {
         std::unique_lock guard(ctx_->mtx_);
         if (!ctx_->runnable_set_.empty()) {
-          current = *ctx_->runnable_set_.begin();
+          current = *ctx_->runnable_set_.get();
           ctx_->runnable_set_.erase(current);
+        } else {
+          // TODO: consider to avoid iteration to optimize performace in future
+
+          for (auto it = ctx_->may_dead_set_.begin();
+               it != ctx_->may_dead_set_.end(); ++it) {
+            auto ctrl = *it;
+            if (!ctrl->blocked_set_.empty()) {
+              // ctx_->may_dead_set_.erase(ctrl);
+              // this ctrl will be erased from may_dead_set_ in notify_func_
+              DEBUG("worker {%u} start delegate notify ctrl {%p}\n", tid, ctrl);
+              ctrl->notify_func_();
+              ctrl->notify_func_ = nullptr;
+              DEBUG("worker {%u} delegate notify end\n", tid);
+              break;
+            }
+          }
         }
       }
       if (!current) {

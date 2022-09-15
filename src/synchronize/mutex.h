@@ -1,24 +1,28 @@
+#include "common/spinlock.h"
 #include "context/context.h"
 
 namespace cppgo {
 
 class Mutex {
  public:
-  Mutex(Context* ctx) : monitor_(ctx) {}
+  Mutex(Context* ctx) : ctx_(ctx), hangup_ctrl_(ctx) {}
 
-  AsyncFunction<void> lock() { co_await monitor_.enter(); }
-  void unlock() { monitor_.exit(); }
+  AsyncFunction<void> lock();
+  void unlock();
 
  protected:
-  Monitor monitor_;
+  Context* ctx_;
+  SpinLock mtx_;
+  HangupCtrl hangup_ctrl_;
+  bool idle_ = true;
 };
 
 class ConditionVariable : public Mutex {
  public:
   ConditionVariable(Context* ctx) : Mutex(ctx) {}
 
-  AsyncFunction<void> wait() { co_await monitor_.wait(); }
-  void notify_one() { monitor_.notify_one(); }
+  AsyncFunction<void> wait();
+  void notify_one();
 };
 
 /* since co_await operator can't be placed in constructor, you have to lock the
