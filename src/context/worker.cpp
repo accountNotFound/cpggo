@@ -1,6 +1,7 @@
 #include "worker.h"
 
 #include <chrono>
+#include <random>
 
 #include "context.h"
 #include "monitor.h"
@@ -13,6 +14,8 @@ namespace cppgo {
 
 SpinLock Worker::cls_;
 Worker::Id Worker::cls_id_ = 0;
+
+std::default_random_engine rand_;
 
 Worker::Worker(Context* ctx)
     : ctx_(ctx), status_(Status::INIT), stop_flag_(false) {
@@ -28,7 +31,18 @@ void Worker::start() {
       {
         std::unique_lock guard(ctx_->self_);
         if (!ctx_->runnable_set_.empty()) {
-          current = *(ctx_->runnable_set_.begin());
+          // TODO: more elegant random strategy
+          size_t ri = rand_() % 4;
+          DEBUG("len(runnable_set)=%d, ri=%d", ctx_->runnable_set_.size(), ri);
+          for (auto it = ctx_->runnable_set_.begin();
+               it != ctx_->runnable_set_.end(); ++it) {
+            current = *it;
+            if (ri == 0) {
+              break;
+            } else {
+              --ri;
+            }
+          }
           ctx_->runnable_set_.erase(current);
         }
       }
@@ -51,10 +65,18 @@ void Worker::start() {
 
       DEBUG("worker {%u} start execute task {%u}", id(), current->id());
       while (true) {
+        DEBUG("worker {%u} resume task {%u}", id(), current->id());
         current->resume();
+        DEBUG("worker {%u} resume task {%u} end", id(), current->id());
+
+        std::unique_lock guard(ctx_->self_);
         if (current->done()) {
+          DEBUG("task {%u} done, resource clean", current->id());
+          ctx_->running_map_.erase(current);
+          ctx_->task_mgr_.destroy(current);
           break;
         } else if (current->callback_) {
+          DEBUG("worker {%u} execute task {%u} callback", id(), current->id());
           bool runnable = current->callback_();
           current->callback_ = nullptr;
 
@@ -66,14 +88,6 @@ void Worker::start() {
         }
       }
       DEBUG("worker {%u} execute task {%u} end", id(), current->id());
-
-      // clean resource
-      if (current->done()) {
-        DEBUG("task {%u} done, resource clean", current->id());
-        std::unique_lock guard(ctx_->self_);
-        ctx_->running_map_.erase(current);
-        ctx_->task_mgr_.destroy(current);
-      }
     }
     status_ = Status::DONE;
   });

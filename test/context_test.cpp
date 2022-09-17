@@ -14,7 +14,9 @@ int loop_num = 100;
 
 Context ctx(thread_num);
 
-Monitor monitor(&ctx);
+Resource resource(1);
+
+Monitor monitor(&ctx, &resource);
 
 int value = 0;
 

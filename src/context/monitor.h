@@ -10,6 +10,33 @@
 
 namespace cppgo {
 
+struct Resource;
+class Monitor;
+
+struct Resource {
+  friend class Monitor;
+
+ public:
+  Resource(size_t capacity) : capacity_(capacity) {}
+  Resource(Resource&) = delete;
+
+  void lock() { self_.lock(); }
+  void unlock() { self_.unlock(); }
+
+ private:
+  // call with lock
+  bool available_() { return use_count_ < capacity_; }
+  // call with lock
+  bool acquire_() { return use_count_ < capacity_ ? ++use_count_ : 0; }
+  // call with lock
+  void release_() { --use_count_; }
+
+ private:
+  SpinLock self_;
+  size_t capacity_;
+  size_t use_count_ = 0;
+};
+
 class Monitor {
   friend class Context;
   friend class Worker;
@@ -19,7 +46,7 @@ class Monitor {
   using Id = size_t;
 
  public:
-  Monitor(Context* ctx);
+  Monitor(Context* ctx, Resource* resource);
   Monitor(Monitor&) = delete;
 
   Id id() { return id_; }
@@ -28,13 +55,11 @@ class Monitor {
   // lock automatically when co_return
   AsyncFunction<void> wait();
   // won't lock automatically when co_return
-  AsyncFunction<void> block();
+  AsyncFunction<void> suspend();
   void notify_one();
   void exit();
-
- private:
-  // call in Task's callback. should be protected by monitor's lock
-  void notify_one_with_lock_();
+  // call with Resource's lock
+  void notify_one_with_guard();
 
  private:
   // just for unique id generation
@@ -44,11 +69,11 @@ class Monitor {
   Id id_;
 
   Context* ctx_;
-  std::unordered_set<Task*> blocked_set_;  // this set is protected by
-                                           // context's mutex in callback
 
-  SpinLock self_;  // protect following members
-  bool busy_flag_ = false;
+  // this set is protected by Context's mutex in Task's callback
+  std::unordered_set<Task*> blocked_set_;
+
+  Resource* resource_;
 };
 
 }  // namespace  cppgo
