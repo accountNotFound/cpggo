@@ -23,7 +23,7 @@ void Task::change_status_(Status from, Status to) {
   if (from != status_ || to == Status::RNUNING) {
     RAISE("invalid status change");
   }
-  auto get_set_ptr = [this](Status s) -> std::unordered_set<Task*>* {
+  auto get_set_ptr = [this](Status s) -> TimeOrderSet<Task*>* {
     if (s == Status::RUNNABLE) {
       return &this->ctx_->runnable_set_;
     } else if (s == Status::BLOCKED) {

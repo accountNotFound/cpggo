@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "common/spinlock.h"
+#include "common/time_order_set.h"
 #include "coroutine/coroutine.h"
 
 namespace cppgo {
@@ -71,7 +72,7 @@ class Monitor {
   Context* ctx_;
 
   // this set is protected by Context's mutex in Task's callback
-  std::unordered_set<Task*> blocked_set_;
+  TimeOrderSet<Task*> blocked_set_;
 
   Resource* resource_;
 };

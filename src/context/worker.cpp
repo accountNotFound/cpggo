@@ -31,18 +31,7 @@ void Worker::start() {
       {
         std::unique_lock guard(ctx_->self_);
         if (!ctx_->runnable_set_.empty()) {
-          // TODO: more elegant random strategy
-          size_t ri = rand_() % 4;
-          DEBUG("len(runnable_set)=%d, ri=%d", ctx_->runnable_set_.size(), ri);
-          for (auto it = ctx_->runnable_set_.begin();
-               it != ctx_->runnable_set_.end(); ++it) {
-            current = *it;
-            if (ri == 0) {
-              break;
-            } else {
-              --ri;
-            }
-          }
+          current = *ctx_->runnable_set_.begin();
           ctx_->runnable_set_.erase(current);
         }
       }

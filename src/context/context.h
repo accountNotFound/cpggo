@@ -6,6 +6,7 @@
 #include "common.h"
 #include "common/allocator.h"
 #include "common/spinlock.h"
+#include "common/time_order_set.h"
 #include "coroutine/coroutine.h"
 
 namespace cppgo {
@@ -31,8 +32,8 @@ class Context {
   Allocator<Task> task_mgr_;
 
   // just reference to resource above
-  std::unordered_set<Task*> runnable_set_;
-  std::unordered_set<Task*> blocked_set_;
+  TimeOrderSet<Task*> runnable_set_;
+  TimeOrderSet<Task*> blocked_set_;
   std::unordered_map<Task*, Worker*> running_map_;
 };
 
