@@ -52,11 +52,11 @@ AsyncFunction<void> Monitor::wait() {
 AsyncFunction<void> Monitor::suspend() {
   auto current = ctx_->this_running_task();
   resource_->lock();
+  if (!resource_->available_()) {
+    resource_->release_();
+    this->notify_one_with_guard();
+  }
   current->callback_ = [this, current]() -> bool {
-    if (!resource_->available_()) {
-      resource_->release_();
-      this->notify_one_with_guard();
-    }
     DEBUG("task {%u} wait, [running] -> [blocked]", current->id());
 
     this->blocked_set_.insert(current);
@@ -87,9 +87,12 @@ void Monitor::notify_one_with_guard() {
   auto current = ctx_->this_running_task();
   {
     std::unique_lock guard(ctx_->self_);
-    if (blocked_set_.empty() && !resource_->available_()) {
-      RAISE("invlalid notification");
-    }
+
+    // AsyncFuntion doesn't support exception now
+    // if (blocked_set_.empty() && !resource_->available_()) {
+    //   RAISE("invlalid notification");
+    // }
+    
     DEBUG("len(set at {%p})=%d", this, blocked_set_.size());
     if (!blocked_set_.empty()) {
       auto next = *blocked_set_.begin();

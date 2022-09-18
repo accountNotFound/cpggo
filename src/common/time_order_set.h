@@ -23,6 +23,7 @@ class TimeOrderSet {
   Iterator end() { return list_.end(); }
   size_t count(const T& val) { return v2it_.count(val); }
   bool empty() { return list_.empty(); }
+  size_t size() { return list_.size(); }
 
  private:
   std::unordered_map<T, Iterator> v2it_;
