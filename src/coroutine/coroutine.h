@@ -81,6 +81,7 @@ class AsyncFunction : public AsyncFuncBase {
   void await_suspend(std::coroutine_handle<PromiseDerived> caller) {
     caller.promise().p_stack_->push(type_handler_);
     type_handler_.promise().p_stack_ = caller.promise().p_stack_;
+    type_handler_.promise().caller_ = caller;
   }
 
   T await_resume() {

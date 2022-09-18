@@ -8,7 +8,7 @@
 using namespace cppgo;
 
 int thread_num = 10;
-int loop_num = 10000;
+int loop_num = 30000;
 
 SpinLock lock;
 
