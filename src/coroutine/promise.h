@@ -10,6 +10,11 @@ using RawHandler = std::coroutine_handle<>;
 struct PromiseBase {
  public:
   PromiseBase() = default;
+  ~PromiseBase() {
+    if (!caller_ && !p_stack_) {
+      delete p_stack_;
+    }
+  }
 
   std::suspend_always initial_suspend() const { return {}; }
   std::suspend_always final_suspend() const noexcept { return {}; }
@@ -17,6 +22,7 @@ struct PromiseBase {
 
  protected:
   std::stack<RawHandler>* p_stack_ = nullptr;
+  RawHandler caller_ = nullptr;
 };
 
 template <typename T>
