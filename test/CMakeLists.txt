@@ -9,3 +9,6 @@ target_link_libraries(context_test context)
 
 add_executable(channel_test channel_test.cpp)
 target_link_libraries(channel_test context)
+
+add_executable(multi_channel_test multi_channel_test.cpp)
+target_link_libraries(multi_channel_test context)
