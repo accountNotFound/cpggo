@@ -23,22 +23,23 @@ class Channel {
   AsyncFunction<void> send(const T& data) {
     while (true) {
       {
-        std::unique_lock guard(resource_);
+        resource_.lock();
         if (buffer_.size() < capacity_) {
           buffer_.push(data);
           r_mon_.notify_one_with_guard();
           w_mon_.notify_one_with_guard();
           DEBUG("task {%u} write finish", ctx_->this_running_task()->id());
+          resource_.unlock();
           break;
         }
+        
         r_mon_.notify_one_with_guard();
+        DEBUG("task {%u} write fail, wait", ctx_->this_running_task()->id());
+        co_await w_mon_.suspend_with_guard_unlock();
       }
-      DEBUG("task {%u} write fail, wait", ctx_->this_running_task()->id());
-      co_await w_mon_.suspend();
     }
 
-    // implementation above is equivalent to, but runs faster than following
-    // implementation:
+    // implementation below has some bugs
 
     // co_await w_mon_.enter();
     // DEBUG("task {%u} start write", ctx_->this_running_task()->id());
@@ -61,24 +62,24 @@ class Channel {
     T res;
     while (true) {
       {
-        std::unique_lock guard(resource_);
+        resource_.lock();
         if (buffer_.size() > 0) {
           res = std::move(buffer_.front());
           buffer_.pop();
           r_mon_.notify_one_with_guard();
           w_mon_.notify_one_with_guard();
           DEBUG("task {%u} read finish", ctx_->this_running_task()->id());
+          resource_.unlock();
           break;
         }
         w_mon_.notify_one_with_guard();
+        DEBUG("task {%u} read fail, wait", ctx_->this_running_task()->id());
+        co_await r_mon_.suspend_with_guard_unlock();
       }
-      DEBUG("task {%u} read fail, wait", ctx_->this_running_task()->id());
-      co_await r_mon_.suspend();
     }
     co_return std::move(res);
 
-    // implementation above is equivalent to, but runs faster than following
-    // implementation:
+    // implementation below has some bugs
 
     // T res;
     // co_await r_mon_.enter();

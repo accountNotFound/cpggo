@@ -50,22 +50,8 @@ AsyncFunction<void> Monitor::wait() {
 }
 
 AsyncFunction<void> Monitor::suspend() {
-  auto current = ctx_->this_running_task();
   resource_->lock();
-  if (!resource_->available_()) {
-    resource_->release_();
-    this->notify_one_with_guard();
-  }
-  current->callback_ = [this, current]() -> bool {
-    DEBUG("task {%u} wait, [running] -> [blocked]", current->id());
-
-    this->blocked_set_.insert(current);
-    current->change_status_(Task::Status::RNUNING, Task::Status::BLOCKED);
-
-    this->resource_->unlock();
-    return false;
-  };
-  co_await std::suspend_always{};
+  co_await suspend_with_guard_unlock();
 }
 
 void Monitor::notify_one() {
@@ -92,7 +78,7 @@ void Monitor::notify_one_with_guard() {
     // if (blocked_set_.empty() && !resource_->available_()) {
     //   RAISE("invlalid notification");
     // }
-    
+
     DEBUG("len(set at {%p})=%d", this, blocked_set_.size());
     if (!blocked_set_.empty()) {
       auto next = *blocked_set_.begin();
@@ -101,6 +87,24 @@ void Monitor::notify_one_with_guard() {
       next->change_status_(Task::Status::BLOCKED, Task::Status::RUNNABLE);
     }
   }
+}
+
+AsyncFunction<void> Monitor::suspend_with_guard_unlock() {
+  auto current = ctx_->this_running_task();
+  if (!resource_->available_()) {
+    resource_->release_();
+    this->notify_one_with_guard();
+  }
+  current->callback_ = [this, current]() -> bool {
+    DEBUG("task {%u} wait, [running] -> [blocked]", current->id());
+
+    this->blocked_set_.insert(current);
+    current->change_status_(Task::Status::RNUNING, Task::Status::BLOCKED);
+
+    this->resource_->unlock();
+    return false;
+  };
+  co_await std::suspend_always{};
 }
 
 }  // namespace cppgo

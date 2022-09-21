@@ -61,6 +61,8 @@ class Monitor {
   void exit();
   // call with Resource's lock
   void notify_one_with_guard();
+  // call with Resource's lock
+  AsyncFunction<void> suspend_with_guard_unlock();
 
  private:
   // just for unique id generation
