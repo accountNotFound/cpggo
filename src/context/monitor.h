@@ -53,15 +53,11 @@ class Monitor {
   Id id() { return id_; }
 
   AsyncFunction<void> enter();
-  // lock automatically when co_return
-  AsyncFunction<void> wait();
-  // won't lock automatically when co_return
-  AsyncFunction<void> suspend();
-  void notify_one();
   void exit();
+
   // call with Resource's lock
   void notify_one_with_guard();
-  // call with Resource's lock
+  // call with Resource's lock, automatically unlock when co_return
   AsyncFunction<void> suspend_with_guard_unlock();
 
  private:

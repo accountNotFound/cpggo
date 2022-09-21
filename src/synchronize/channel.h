@@ -38,24 +38,6 @@ class Channel {
         co_await w_mon_.suspend_with_guard_unlock();
       }
     }
-
-    // implementation below has some bugs
-
-    // co_await w_mon_.enter();
-    // DEBUG("task {%u} start write", ctx_->this_running_task()->id());
-    // while (true) {
-    //   if (buffer_.size() < capacity_) {
-    //     buffer_.push(data);
-    //     r_mon_.notify_one();
-    //     w_mon_.notify_one();
-    //     DEBUG("task {%u} write finish", ctx_->this_running_task()->id());
-    //     break;
-    //   }
-    //   DEBUG("task {%u} write fail, wait", ctx_->this_running_task()->id());
-    //   r_mon_.notify_one();
-    //   co_await w_mon_.wait();
-    // }
-    // w_mon_.exit();
   }
 
   AsyncFunction<T> recv() {
@@ -78,26 +60,6 @@ class Channel {
       }
     }
     co_return std::move(res);
-
-    // implementation below has some bugs
-
-    // T res;
-    // co_await r_mon_.enter();
-    // DEBUG("task {%u} start read", ctx_->this_running_task()->id());
-    // while (true) {
-    //   if (buffer_.size() > 0) {
-    //     res = std::move(buffer_.front());
-    //     buffer_.pop();
-    //     r_mon_.notify_one();
-    //     w_mon_.notify_one();
-    //     DEBUG("task {%u} read finish", ctx_->this_running_task()->id());
-    //     break;
-    //   }
-    //   DEBUG("task {%u} read fail, wait", ctx_->this_running_task()->id());
-    //   w_mon_.notify_one();
-    //   co_await r_mon_.wait();
-    // }
-    // r_mon_.exit();
   }
 
  private:

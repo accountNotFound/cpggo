@@ -19,13 +19,15 @@ Mutex mtx(&ctx);
 
 int value = 0;
 
-AsyncFunction<void> bar(Channel<std::string>& inchan,
-                        Channel<int>& outchan) {
+AsyncFunction<void> bar(Channel<std::string>& inchan, Channel<int>& outchan) {
+  // printf("task {%u} start bar\n", ctx.this_running_task()->id());
   std::string s = co_await inchan.recv();
   co_await outchan.send(s.size());
+  // printf("task {%u} end bar\n", ctx.this_running_task()->id());
 }
 
 AsyncFunction<void> foo() {
+  // printf("task {%u} start foo\n", ctx.this_running_task()->id());
   Channel<std::string> inchan(&ctx, 1);
   Channel<int> outchan(&ctx, 1);
   for (int i = 0; i < loop_num; i++) {
@@ -36,6 +38,7 @@ AsyncFunction<void> foo() {
     value += v;
     mtx.unlock();
   }
+  // printf("task {%u} end foo\n", ctx.this_running_task()->id());
 }
 
 int main() {
@@ -45,6 +48,7 @@ int main() {
   while (!ctx.idle() &&
          value < foo_bar_num * loop_num * std::string(data).size()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // printf("current value=%d\n", value);
   }
   printf("value=%d\n", value);
   printf("target=%d\n", foo_bar_num * loop_num * std::string(data).size());

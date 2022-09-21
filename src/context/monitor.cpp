@@ -44,21 +44,6 @@ AsyncFunction<void> Monitor::enter() {
   }
 }
 
-AsyncFunction<void> Monitor::wait() {
-  co_await suspend();
-  co_await enter();
-}
-
-AsyncFunction<void> Monitor::suspend() {
-  resource_->lock();
-  co_await suspend_with_guard_unlock();
-}
-
-void Monitor::notify_one() {
-  std::unique_lock guard(*resource_);
-  notify_one_with_guard();
-}
-
 void Monitor::exit() {
   auto current = ctx_->this_running_task();
   {
@@ -79,7 +64,8 @@ void Monitor::notify_one_with_guard() {
     //   RAISE("invlalid notification");
     // }
 
-    DEBUG("len(set at {%p})=%d", this, blocked_set_.size());
+    DEBUG("task {%u} try notify from monitor {%u}, len(set)=%d", current->id(),
+          id(), blocked_set_.size());
     if (!blocked_set_.empty()) {
       auto next = *blocked_set_.begin();
       DEBUG("task {%u} is notified, [blocked] -> [runnable]", next->id());
