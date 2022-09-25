@@ -1,3 +1,5 @@
+#pragma once
+
 #include <queue>
 
 // #define USE_DEBUG

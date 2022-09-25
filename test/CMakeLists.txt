@@ -12,3 +12,6 @@ target_link_libraries(channel_test context)
 
 add_executable(multi_channel_test multi_channel_test.cpp)
 target_link_libraries(multi_channel_test context)
+
+add_executable(sleep_test sleep_test.cpp)
+target_link_libraries(sleep_test event context)

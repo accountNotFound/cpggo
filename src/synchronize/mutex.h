@@ -1,4 +1,6 @@
-#include "context/common.h"
+#pragma once
+
+#include "context/header.h"
 #include "context/monitor.h"
 
 namespace cppgo {

@@ -1,8 +1,8 @@
 #include "coroutine/coroutine.h"
 
-#include <string>
+#include <stdio.h>
 
-#include "stdio.h"
+#include <string>
 
 cppgo::AsyncFunction<int> bar(int n) {
   int res = 0;
