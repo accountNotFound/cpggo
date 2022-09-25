@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "common.h"
+#include "header.h"
 #include "common/allocator.h"
 #include "common/spinlock.h"
 #include "common/time_order_set.h"
@@ -19,12 +19,14 @@ class Context {
  public:
   Context(size_t worker_num);
 
+  bool done() { return done_; }
+
   void spawn(AsyncFunction<void>&& func);
   bool idle();
   void stop();
   Task* this_running_task();
 
- private:
+ protected:
   SpinLock self_;
 
   // resource managers
@@ -35,6 +37,8 @@ class Context {
   TimeOrderSet<Task*> runnable_set_;
   TimeOrderSet<Task*> blocked_set_;
   std::unordered_map<Task*, Worker*> running_map_;
+
+  bool done_ = false;
 };
 
 }  // namespace cppgo

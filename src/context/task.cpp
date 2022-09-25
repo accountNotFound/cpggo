@@ -10,6 +10,10 @@ namespace cppgo {
 SpinLock Task::cls_;
 Task::Id Task::cls_id_ = 0;
 
+Task::Task() : ctx_(nullptr), func_(), status_(Status::RUNNABLE) {
+  id_ = -1;
+}
+
 Task::Task(Context* ctx, AsyncFunction<void>&& func)
     : ctx_(ctx), func_(std::move(func)), status_(Status::RUNNABLE) {
   {
@@ -20,6 +24,9 @@ Task::Task(Context* ctx, AsyncFunction<void>&& func)
 }
 
 void Task::change_status_(Status from, Status to) {
+  if (!ctx_) {
+    return;
+  }
   if (from != status_ || to == Status::RNUNING) {
     RAISE("invalid status change");
   }
