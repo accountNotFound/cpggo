@@ -40,7 +40,7 @@ class AsyncFunction : public AsyncFuncBase {
  public:
   using promise_type = AsyncFuncPromise<T>;
 
-  AsyncFunction() = delete;
+  AsyncFunction() : type_handler_(nullptr) {}
   AsyncFunction(const AsyncFunction&) = delete;
   AsyncFunction(AsyncFunction&& afn) {
     if (type_handler_) {
@@ -57,11 +57,17 @@ class AsyncFunction : public AsyncFuncBase {
   }
 
   void init() {
+    if (!type_handler_) {
+      return;
+    }
     type_handler_.promise().p_stack_ =
         new std::stack<RawHandler>({type_handler_});
   }
 
   void resume() {
+    if (!type_handler_) {
+      return;
+    }
     std::stack<RawHandler>* stk = type_handler_.promise().p_stack_;
     while (!stk->empty() && stk->top().done()) {
       stk->pop();

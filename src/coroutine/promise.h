@@ -1,6 +1,7 @@
 #pragma once
 
 #include <coroutine>
+#include <exception>
 #include <stack>
 
 namespace cppgo {
@@ -18,11 +19,12 @@ struct PromiseBase {
 
   std::suspend_always initial_suspend() const { return {}; }
   std::suspend_always final_suspend() const noexcept { return {}; }
-  void unhandled_exception() noexcept {}
+  void unhandled_exception() noexcept { exception_ = std::current_exception(); }
 
  protected:
   std::stack<RawHandler>* p_stack_ = nullptr;
   RawHandler caller_ = nullptr;
+  std::exception_ptr exception_;
 };
 
 template <typename T>
