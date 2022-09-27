@@ -1,4 +1,5 @@
 #include "context.h"
+
 #include "task.h"
 #include "worker.h"
 
@@ -31,17 +32,19 @@ void Context::stop() {
   for (auto& worker : worker_mgr_) {
     worker->join();
   }
+  done_ = true;
 }
 
 // get current running task on this thread
 Task* Context::this_running_task() {
+  static Task no_schedule_task;
   std::unique_lock guard(self_);
   for (auto& [task, worker] : running_map_) {
     if (worker->thread_id() == std::this_thread::get_id()) {
       return task;
     }
   }
-  RAISE("this thread has no relevance to context");
+  return &no_schedule_task;
 }
 
 }  // namespace cppgo

@@ -1,10 +1,11 @@
 #include "synchronize/channel.h"
 
+#include <stdio.h>
+
 #include <chrono>
 #include <string>
 
 #include "context/context.h"
-#include "stdio.h"
 #include "synchronize/mutex.h"
 
 using namespace cppgo;

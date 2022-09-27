@@ -3,9 +3,9 @@
 #include <functional>
 #include <stack>
 
-#include "common.h"
 #include "common/spinlock.h"
 #include "coroutine/coroutine.h"
+#include "header.h"
 
 namespace cppgo {
 
@@ -45,6 +45,7 @@ class Task {
   bool done() { return func_.done(); }
 
  private:
+  Task();
   Task(Context* ctx, AsyncFunction<void>&& func);
 
   // called in Task's callback, should be protected by context's lock

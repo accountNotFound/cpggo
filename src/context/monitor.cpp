@@ -59,10 +59,9 @@ void Monitor::notify_one_with_guard() {
   {
     std::unique_lock guard(ctx_->self_);
 
-    // AsyncFuntion doesn't support exception now
-    // if (blocked_set_.empty() && !resource_->available_()) {
-    //   RAISE("invlalid notification");
-    // }
+    if (blocked_set_.empty() && !resource_->available_()) {
+      RAISE("invlalid notification");
+    }
 
     DEBUG("task {%u} try notify from monitor {%u}, len(set)=%d", current->id(),
           id(), blocked_set_.size());
