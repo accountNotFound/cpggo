@@ -32,9 +32,9 @@ struct Fd {
   size_t uid;
 };
 
-class EventContext : public Context {
+class EventHandlerBase {
  public:
-  EventContext(size_t thread_num) : Context(thread_num) {}
+  EventHandlerBase(Context* ctx) : ctx_(ctx) {}
 
   virtual void add(const Fd& fd, Event listen_on) {}
   virtual void mod(const Fd& fd, Event listen_on) {}
@@ -42,6 +42,9 @@ class EventContext : public Context {
   // co_return when fd is ready and selected
   virtual AsyncFunction<void> signal(const Fd& fd) = 0;
   virtual void evloop() = 0;
+
+protected:
+  Context* ctx_;
 };
 
 }  // namespace cppgo

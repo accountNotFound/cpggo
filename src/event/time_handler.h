@@ -35,9 +35,9 @@ struct TimeFd : public Fd {
 //   return TimeFd(millisecond);
 // }
 
-class TimeEventContext : public EventContext {
+class TimeHandler : public EventHandlerBase {
  public:
-  TimeEventContext(size_t thread_num) : EventContext(thread_num) {}
+  TimeHandler(Context* ctx) : EventHandlerBase(ctx) {}
 
   // ONESHOT event is always added
   void add(const Fd& fd, Event listen_on);
@@ -45,6 +45,7 @@ class TimeEventContext : public EventContext {
   void evloop();
 
  private:
+  SpinLock self_;
   std::priority_queue<TimeFd, std::vector<TimeFd>, TimeFd::Greater> time_queue_;
   Allocator<Channel<bool>> chan_mgr_;
   std::unordered_map<Fd, Channel<bool>*, Fd::Hash, Fd::Equal> chan_map_;

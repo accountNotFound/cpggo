@@ -1,4 +1,4 @@
-#include "time_event_context.h"
+#include "time_handler.h"
 
 #include <thread>
 
@@ -21,14 +21,14 @@ TimeFd::TimeFd(unsigned long long millisecond) {
   expired_time = current_millisec() + std::chrono::milliseconds(millisecond);
 }
 
-void TimeEventContext::add(const Fd& fd, Event listen_on) {
+void TimeHandler::add(const Fd& fd, Event listen_on) {
   std::unique_lock guard(self_);
-  auto signal = chan_mgr_.create(this, 1);
+  auto signal = chan_mgr_.create(ctx_, 1);
   chan_map_[fd] = signal;
   time_queue_.push(dynamic_cast<const TimeFd&>(fd));
 }
 
-AsyncFunction<void> TimeEventContext::signal(const Fd& fd) {
+AsyncFunction<void> TimeHandler::signal(const Fd& fd) {
   Channel<bool>* chan = nullptr;
   {
     std::unique_lock guard(self_);
@@ -43,8 +43,8 @@ AsyncFunction<void> TimeEventContext::signal(const Fd& fd) {
   }
 }
 
-void TimeEventContext::evloop() {
-  while (!done()) {
+void TimeHandler::evloop() {
+  while (!ctx_->done()) {
     self_.lock();
     if (!time_queue_.empty() &&
         current_millisec() >= time_queue_.top().expired_time) {

@@ -3,21 +3,23 @@
 #include <chrono>
 #include <thread>
 
-#include "event/time_event_context.h"
+#include "event/time_handler.h"
 
 using namespace cppgo;
 
 constexpr size_t thread_num = 8;
 constexpr size_t loop_num = 10;
 
-time::TimeEventContext ctx(thread_num);
+Context ctx(thread_num);
+
+time::TimeHandler handler(&ctx);
 
 AsyncFunction<void> sleep(unsigned long long millisecond) {
   // printf("sleep(%u)\n", millisecond);
   auto fd = time::TimeFd(millisecond);
-  ctx.add(fd, Event::IN);
+  handler.add(fd, Event::IN);
   // printf("start await signal of fd {%u}\n", size_t(fd));
-  co_await ctx.signal(fd);
+  co_await handler.signal(fd);
 }
 
 AsyncFunction<void> foo(size_t id, unsigned long long millisecond) {
@@ -45,7 +47,7 @@ int main() {
     }
     p_ctx->stop();
   });
-  ctx.evloop();
+  handler.evloop();
   if (t.joinable()) {
     t.join();
   }
