@@ -13,7 +13,7 @@ Goroutine::Impl::Impl(Goroutine& this_wrapper, Context& ctx, AsyncFunctionBase&&
 }
 
 void Goroutine::Impl::run() {
-  std::unique_lock guard(_mtx);
+  _mtx.lock();
   while (!_func.done()) {
     _func.resume();
     if (_blocked_flag) {
@@ -21,6 +21,8 @@ void Goroutine::Impl::run() {
       break;
     }
   }
+  _mtx.unlock();
+  if (_func.done()) _this_wrapper->~Goroutine();
 }
 
 Goroutine::Goroutine(Context& ctx, AsyncFunctionBase&& fn) : _impl(std::make_unique<Impl>(*this, ctx, std::move(fn))) {}

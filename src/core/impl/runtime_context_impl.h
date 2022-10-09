@@ -38,6 +38,7 @@ class Context::Impl {
   std::set<Executor, Less> _executors;
   std::set<Goroutine, Less> _goroutines;
   LockFreeQueue<Goroutine*> _runnable_queue;
+  LockFreeQueue<Goroutine*> _done_queue;
 };
 
 }  // namespace cppgo
