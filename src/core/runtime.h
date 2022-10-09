@@ -36,6 +36,7 @@ class Context {
  public:
   Goroutine& go(AsyncFunctionBase&& fn);
   Goroutine& current_goroutine();
+  void start();
   void wait_until(const std::function<bool()>& pred);
 
  private:

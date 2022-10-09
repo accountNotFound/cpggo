@@ -4,21 +4,29 @@
 #include "runtime_context_impl.h"
 #include "runtime_executor_impl.h"
 
+#define USE_DEBUG
+#include "util/log.h"
+
 namespace cppgo {
 
 thread_local Goroutine* Context::Impl::_this_thread_goroutine = nullptr;
 
-Context::Impl::Impl(Context& this_wrapper, size_t executor_num) : _this_wrapper(&this_wrapper) {
-  for (int i = 0; i < executor_num; ++i) {
-    auto [iter, ok] = _executors.emplace(*_this_wrapper);
-    iter->_impl->start();
-  }
-}
+Context::Impl::Impl(Context& this_wrapper, size_t executor_num)
+    : _this_wrapper(&this_wrapper), _executor_num(executor_num) {}
 
 Goroutine& Context::Impl::go(AsyncFunctionBase&& fn) {
   auto [iter, ok] = _goroutines.emplace(*_this_wrapper, std::move(fn));
   _runnable_queue.enqueue(&const_cast<Goroutine&>(*iter));
   return const_cast<Goroutine&>(*iter);
+}
+
+Goroutine& Context::Impl::current_goroutine() { return *_this_thread_goroutine; }
+
+void Context::Impl::start() {
+  for (int i = 0; i < _executor_num; ++i) {
+    auto [iter, ok] = _executors.emplace(*_this_wrapper);
+    iter->_impl->start();
+  }
 }
 
 void Context::Impl::wait_until(const std::function<bool()>& pred) {
@@ -34,6 +42,8 @@ Context::~Context() = default;
 Goroutine& Context::current_goroutine() { return _impl->current_goroutine(); }
 
 Goroutine& Context::go(AsyncFunctionBase&& fn) { return _impl->go(std::move(fn)); }
+
+void Context::start() { _impl->start(); }
 
 void Context::wait_until(const std::function<bool()>& pred) { _impl->wait_until(pred); }
 

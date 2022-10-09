@@ -11,9 +11,10 @@ class Goroutine::Impl {
 
  public:
   size_t id() { return _id; }
-  void change_runnable() { _ctx_impl->_runnable_queue.enqueue(_this()); }
-  void change_blocked() { _blocked_flag = true; }
+  void set_runnable() { _ctx_impl->_runnable_queue.enqueue(_this()); }
+  void set_blocked() { _blocked_flag = true; }
   void run();
+  bool done() { return _func.done(); }
 
  private:
   Goroutine* _this() { return _this_wrapper; }

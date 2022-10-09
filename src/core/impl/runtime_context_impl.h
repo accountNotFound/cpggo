@@ -16,7 +16,8 @@ class Context::Impl {
 
  public:
   Goroutine& go(AsyncFunctionBase&& fn);
-  Goroutine& current_goroutine() { return *_this_thread_goroutine; }
+  Goroutine& current_goroutine();
+  void start();
   void wait_until(const std::function<bool()>& pred);
 
  private:
@@ -33,6 +34,7 @@ class Context::Impl {
 
  private:
   Context* _this_wrapper;
+  size_t _executor_num;
   std::set<Executor, Less> _executors;
   std::set<Goroutine, Less> _goroutines;
   LockFreeQueue<Goroutine*> _runnable_queue;

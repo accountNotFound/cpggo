@@ -1,6 +1,9 @@
 #include "runtime_executor_impl.h"
 #include "runtime_goroutine_impl.h"
 
+// #define USE_DEBUG
+#include "util/log.h"
+
 namespace cppgo {
 
 SpinLock Executor::Impl::_cls_mtx;
@@ -15,12 +18,21 @@ void Executor::Impl::_loop() {
   while (!_stop_flag) {
     auto [routine, ok] = _ctx_impl->_runnable_queue.dequeue();
     if (!ok) {
+      DEBUG("executor {%d} sleep", 0);
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
       continue;
     }
     _ctx_impl->_this_thread_goroutine = routine;
+    DEBUG("executor {%d} start run routine {%d}", id(), routine->id());
     routine->_impl->run();
+    DEBUG("executor {%d} run routine {%d} end", id(), routine->id());
     _ctx_impl->_this_thread_goroutine = nullptr;
+
+    // bug to fix, destroy goroutine is no thread safe
+    // if (routine->_impl->done()) {
+    //   DEBUG("routine {%d} done, destroy", routine->id());
+    //   _ctx_impl->_goroutines.erase(*routine);
+    // }
   }
 }
 

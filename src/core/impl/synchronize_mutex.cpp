@@ -3,30 +3,41 @@
 #include "util/lock_free_queue.h"
 #include "util/spin_lock.h"
 
+// #define USE_DEBUG
+#include "util/log.h"
+
 namespace cppgo {
 
 class Mutex::Impl {
  public:
-  Impl(Context& ctx) : _ctx() {}
+  Impl(Context& ctx) : _ctx(&ctx) {}
 
  public:
   AsyncFunction<void> lock() {
     while (true) {
-      std::unique_lock guard(_mtx);
+      _mtx.lock();
       if (_locked_flag) {
+        DEBUG("routine {%u} lock failed -> blocked", _ctx->current_goroutine().id());
         _blocked_queue.enqueue(&_ctx->current_goroutine());
-        __detail::unwrap(_ctx->current_goroutine()).change_blocked();
+        __detail::unwrap(_ctx->current_goroutine()).set_blocked();
+        _mtx.unlock();
         co_await std::suspend_always{};
       } else {
+        DEBUG("routine {%u} lock", _ctx->current_goroutine().id());
         _locked_flag = true;
+        _mtx.unlock();
         break;
       }
     }
   }
   void unlock() {
     std::unique_lock guard(_mtx);
+    DEBUG("routine {%u} unlock", _ctx->current_goroutine().id());
     auto [next_goroutine, ok] = _blocked_queue.dequeue();
-    if (ok) __detail::unwrap(*next_goroutine).change_runnable();
+    if (ok) {
+      DEBUG("routine {%u} is notified -> runnable", next_goroutine->id());
+      __detail::unwrap(*next_goroutine).set_runnable();
+    }
     _locked_flag = false;
   }
 
