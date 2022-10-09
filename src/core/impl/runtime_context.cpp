@@ -12,10 +12,11 @@ namespace cppgo {
 thread_local Goroutine* Context::Impl::_this_thread_goroutine = nullptr;
 
 Context::Impl::Impl(Context& this_wrapper, size_t executor_num)
-    : _this_wrapper(&this_wrapper), _executor_num(executor_num) {}
+    : _this_wrapper(&this_wrapper), _executor_num(executor_num) {
+  // can not create Executors here because `this` pointer is still imcomplete
+}
 
 Goroutine& Context::Impl::go(AsyncFunctionBase&& fn) {
-  std::unique_lock guard(_mtx);
   auto [iter, ok] = _goroutines.emplace(*_this_wrapper, std::move(fn));
   _runnable_queue.enqueue(&const_cast<Goroutine&>(*iter));
   return const_cast<Goroutine&>(*iter);
@@ -24,10 +25,8 @@ Goroutine& Context::Impl::go(AsyncFunctionBase&& fn) {
 Goroutine& Context::Impl::current_goroutine() { return *_this_thread_goroutine; }
 
 void Context::Impl::start() {
-  for (int i = 0; i < _executor_num; ++i) {
-    auto [iter, ok] = _executors.emplace(*_this_wrapper);
-    iter->_impl->start();
-  }
+  for (int i = 0; i < _executor_num; ++i) _executors.emplace(*_this_wrapper);
+  for (auto& exec : _executors) exec._impl->start();
 }
 
 void Context::Impl::wait_until(const std::function<bool()>& pred) {

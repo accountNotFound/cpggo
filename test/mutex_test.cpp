@@ -22,7 +22,7 @@ Mutex mtx(ctx);
 int value = 0;
 
 AsyncFunction<void> foo() {
-  DEBUG("test function start");
+  DEBUG("test function start", 0);
   for (int i = 0; i < loop_num; i++) {
     co_await mtx.lock();
     DEBUG("routine {%d} add value", ctx.current_goroutine().id());
@@ -32,7 +32,7 @@ AsyncFunction<void> foo() {
   co_await mtx.lock();
   DEBUG("final value=%d", value);
   mtx.unlock();
-  DEBUG("test function end");
+  DEBUG("test function end", 0);
 }
 
 int main() {

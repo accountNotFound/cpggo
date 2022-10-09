@@ -1,12 +1,53 @@
 #pragma once
 
-#include <set>
+#include <list>
+#include <unordered_map>
 
 #include "runtime.h"
 #include "util/lock_free_queue.h"
 #include "util/spin_lock.h"
 
 namespace cppgo {
+
+namespace __detail {
+template <typename T>
+concept HasId = requires(T v) {
+  { v.id() } -> std::same_as<size_t>;
+};
+
+// a thread-safe (on insert and erase) and no-rehash-affected hash set
+template <HasId T>
+class SafeHashSet {
+ public:
+  using Iter = std::list<T>::iterator;
+
+ public:
+  template <typename... Args>
+  std::pair<Iter, bool> emplace(Args&&... args) {
+    std::unique_lock guard(_mtx);
+    Iter it = _data.emplace(_data.end(), std::forward<Args>(args)...);
+    _index[it->id()] = it;
+    return {it, true};
+  }
+
+  // erase if exists
+  void erase(size_t id) {
+    std::unique_lock guard(_mtx);
+    if (_index.count(id)) {
+      _data.erase(_index[id]);
+      _index.erase(id);
+    }
+  }
+
+  Iter begin() { return _data.begin(); }
+  Iter end() { return _data.end(); }
+
+ private:
+  SpinLock _mtx;
+  std::unordered_map<size_t, Iter> _index;
+  std::list<T> _data;
+};
+}  // namespace __detail
 
 class Context::Impl {
   friend class Executor::Impl;
@@ -28,17 +69,10 @@ class Context::Impl {
   static thread_local Goroutine* _this_thread_goroutine;
 
  private:
-  struct Less {
-    bool operator()(const Executor& lhs, const Executor& rhs) const { return lhs.id() < rhs.id(); }
-    bool operator()(const Goroutine& lhs, const Goroutine& rhs) const { return lhs.id() < rhs.id(); }
-  };
-
- private:
   Context* _this_wrapper;
   size_t _executor_num;
-  SpinLock _mtx;
-  std::set<Executor, Less> _executors;
-  std::set<Goroutine, Less> _goroutines;
+  __detail::SafeHashSet<Executor> _executors;
+  __detail::SafeHashSet<Goroutine> _goroutines;
   LockFreeQueue<Goroutine*> _runnable_queue;
   LockFreeQueue<Goroutine*> _done_queue;
 };

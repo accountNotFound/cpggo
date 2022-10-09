@@ -21,7 +21,18 @@ void Goroutine::Impl::run() {
       break;
     }
   }
+
+  // copy these value to destroy goroutine
+
+  auto done = _func.done();
+  auto gid = id();
+  auto ctx_impl = _ctx_impl;  // Context's life time is longer than `this`
+
   _mtx.unlock();
+
+  // try destroy goroutine if it is done
+  // use copy above instead of `this` pointer, because `this` may be already destroyed by other threads
+  if (done) ctx_impl->_goroutines.erase(gid);
 }
 
 Goroutine::Goroutine(Context& ctx, AsyncFunctionBase&& fn) : _impl(std::make_unique<Impl>(*this, ctx, std::move(fn))) {}
