@@ -37,7 +37,7 @@ template <typename T>
 class Promise : public PromiseBase {
  public:
   std::suspend_always yield_value(T&& value) { return this->_yield_any(value); }
-  void return_value(T&& value) { this->_yield_any(value); }
+  void return_value(T&& value) { this->_yield_any(std::move(value)); }
 };
 
 template <>

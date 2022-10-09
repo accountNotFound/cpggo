@@ -29,7 +29,7 @@ class AsyncFunctionBase::Impl {
     while (!stk->empty() && stk->top().done()) stk->pop();
     if (!stk->empty()) stk->top().resume();
     auto& err = _prom_impl->_exception;
-    if (err) throw err;
+    if (err) std::rethrow_exception(_prom_impl->_exception);
   }
 
   bool done() {
