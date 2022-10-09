@@ -22,7 +22,6 @@ void Goroutine::Impl::run() {
     }
   }
   _mtx.unlock();
-  if (_func.done()) _this_wrapper->~Goroutine();
 }
 
 Goroutine::Goroutine(Context& ctx, AsyncFunctionBase&& fn) : _impl(std::make_unique<Impl>(*this, ctx, std::move(fn))) {}

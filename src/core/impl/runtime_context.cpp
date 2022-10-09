@@ -15,6 +15,7 @@ Context::Impl::Impl(Context& this_wrapper, size_t executor_num)
     : _this_wrapper(&this_wrapper), _executor_num(executor_num) {}
 
 Goroutine& Context::Impl::go(AsyncFunctionBase&& fn) {
+  std::unique_lock guard(_mtx);
   auto [iter, ok] = _goroutines.emplace(*_this_wrapper, std::move(fn));
   _runnable_queue.enqueue(&const_cast<Goroutine&>(*iter));
   return const_cast<Goroutine&>(*iter);

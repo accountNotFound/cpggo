@@ -4,6 +4,7 @@
 
 #include "runtime.h"
 #include "util/lock_free_queue.h"
+#include "util/spin_lock.h"
 
 namespace cppgo {
 
@@ -35,6 +36,7 @@ class Context::Impl {
  private:
   Context* _this_wrapper;
   size_t _executor_num;
+  SpinLock _mtx;
   std::set<Executor, Less> _executors;
   std::set<Goroutine, Less> _goroutines;
   LockFreeQueue<Goroutine*> _runnable_queue;

@@ -27,6 +27,8 @@ void Executor::Impl::_loop() {
     routine->_impl->run();
     DEBUG("executor {%d} run routine {%d} end", id(), routine->id());
     _ctx_impl->_this_thread_goroutine = nullptr;
+
+    // TODO: destroy done goroutines
   }
 }
 
