@@ -44,7 +44,7 @@ class AsyncFunctionBase::Impl {
   }
 
   std::any _await_resume() {
-    auto v = _prom_impl->_value;
+    auto v = std::move(_prom_impl->_value);
     _prom_impl->_value = nullptr;
     return v;
   }

@@ -16,7 +16,7 @@ AsyncFunction<int> bar(int n) {
   co_return std::move(res);
 }
 
-AsyncFunction<std::string> foo(int n) {
+AsyncFunction<std::any> foo(int n) {
   std::string res = "";
   for (int i = 0; i < n; i++) {
     printf("  foo %d\n", i);
@@ -28,7 +28,8 @@ AsyncFunction<std::string> foo(int n) {
 AsyncFunction<void> biz() {
   printf("biz start\n");
   auto res = co_await foo(5);
-  printf("\"%s\"\n", res.data());
+  printf("res type=<%s>\n", res.type().name());
+  printf("\"%s\"\n", std::any_cast<std::string>(res).data());
   printf("biz end\n");
 }
 

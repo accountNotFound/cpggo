@@ -47,7 +47,11 @@ class AsyncFunction : public AsyncFunctionBase {
 
   T await_resume() {
     if constexpr (!std::is_same_v<T, void>) {
-      return std::any_cast<T>(std::move(this->_await_resume()));
+      if constexpr (std::is_same_v<T, std::any>) {
+        return this->_await_resume();
+      } else {
+        return std::any_cast<T>(this->_await_resume());
+      }
     }
   }
 
