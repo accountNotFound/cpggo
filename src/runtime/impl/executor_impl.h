@@ -31,7 +31,7 @@ class Executor::Impl {
   bool _stop_flag = false;
 
  private:
-  Context* _ctx;
+  Context::Impl* _ctx_impl;
 };
 
 }  // namespace cppgo

@@ -24,8 +24,10 @@ class Context {
   void start();
   void wait_until(const std::function<bool()>& pred);
 
- private:
+ public:
   class Impl;
+
+ private:
   std::unique_ptr<Impl> _impl;
 };
 

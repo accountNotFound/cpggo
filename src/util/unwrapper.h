@@ -6,8 +6,8 @@ template <typename T>
 concept HasImpl = true;
 
 template <HasImpl T>
-typename T::Impl& impl(T& wrapper) {
-  return *wrapper._impl.get();
+inline typename T::Impl& impl(T& wrapper) {
+  return *wrapper._impl;
 }
 
 };  // namespace cppgo::__detail

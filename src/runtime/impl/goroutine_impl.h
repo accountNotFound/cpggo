@@ -13,7 +13,7 @@ class Goroutine::Impl {
 
  public:
   size_t id() { return _id; }
-  void set_runnable() { __detail::impl(*_ctx).runnable_queue.enqueue(std::move(_this_wrapper)); }
+  void set_runnable() { _ctx_impl->runnable_queue.enqueue(std::move(_this_wrapper)); }
   void set_blocked() { _blocked_flag = true; }
   void run();
   bool done() { return _func.done(); }
@@ -29,7 +29,7 @@ class Goroutine::Impl {
 
  private:
   Goroutine* _this_wrapper;
-  Context* _ctx;
+  Context::Impl* _ctx_impl;
   AsyncFunctionBase _func;
 };
 

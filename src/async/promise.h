@@ -28,8 +28,10 @@ class PromiseBase {
  protected:
   std::suspend_always _yield_any(std::any&& value);
 
- protected:
+ public:
   class Impl;
+
+ private:
   std::unique_ptr<Impl> _impl;
 };
 
