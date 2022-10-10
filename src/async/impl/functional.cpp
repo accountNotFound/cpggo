@@ -6,51 +6,53 @@ class AsyncFunctionBase::Impl {
   friend class AsyncFunctionBase;
 
  public:
-  Impl(PromiseBase& promise) : _prom_impl(promise._impl.get()) {}
+  Impl(PromiseBase& promise) : _promise(&promise) {}
 
   Impl(Impl&& rhs) {
     this->~Impl();
-    std::swap(_prom_impl, rhs._prom_impl);
+    std::swap(_promise, rhs._promise);
   }
 
   ~Impl() {
-    if (_prom_impl->_handler && !_prom_impl->_handler.done()) _prom_impl->_handler.destroy();
-    _prom_impl->_handler = nullptr;
+    if (__detail::impl(*_promise).handler && !__detail::impl(*_promise).handler.done())
+      __detail::impl(*_promise).handler.destroy();
+    __detail::impl(*_promise).handler = nullptr;
   }
 
  public:
   void init() {
-    _prom_impl->_stack = std::make_shared<std::stack<std::coroutine_handle<>>>();
-    _prom_impl->_stack->push(_prom_impl->_handler);
+    __detail::impl(*_promise).stack = std::make_shared<std::stack<std::coroutine_handle<>>>();
+    __detail::impl(*_promise).stack->push(__detail::impl(*_promise).handler);
   }
 
   void resume() {
-    auto& stk = _prom_impl->_stack;
-    while (!stk->empty() && stk->top().done()) stk->pop();
-    if (!stk->empty()) stk->top().resume();
-    auto& err = _prom_impl->_exception;
-    if (err) std::rethrow_exception(_prom_impl->_exception);
+    auto& stk = *__detail::impl(*_promise).stack;
+    while (!stk.empty() && stk.top().done()) stk.pop();
+    if (!stk.empty()) stk.top().resume();
+    auto& err = __detail::impl(*_promise).error;
+    if (err) std::rethrow_exception(err);
   }
 
   bool done() {
-    auto& hdlr = _prom_impl->_handler;
-    return !hdlr || hdlr.done();
+    auto& hdlr = __detail::impl(*_promise).handler;
+    bool done = !hdlr || hdlr.done();
+    return done;
   }
 
  protected:
   void _await_suspend(PromiseBase& caller) {
-    _prom_impl->_stack = caller._impl->_stack;
-    _prom_impl->_stack->push(_prom_impl->_handler);
+    __detail::impl(*_promise).stack = __detail::impl(caller).stack;
+    __detail::impl(*_promise).stack->push(__detail::impl(*_promise).handler);
   }
 
   std::any _await_resume() {
-    auto v = std::move(_prom_impl->_value);
-    _prom_impl->_value = nullptr;
+    auto v = std::move(__detail::impl(*_promise).value);
+    __detail::impl(*_promise).value = nullptr;
     return v;
   }
 
  private:
-  PromiseBase::Impl* _prom_impl;
+  PromiseBase* _promise;
 };
 
 AsyncFunctionBase::AsyncFunctionBase(PromiseBase& promise) : _impl(std::make_unique<Impl>(promise)) {}

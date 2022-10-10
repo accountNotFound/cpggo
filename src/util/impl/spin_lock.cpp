@@ -1,4 +1,4 @@
-#include "spin_lock.h"
+#include "../spin_lock.h"
 
 #include <atomic>
 #include <mutex>

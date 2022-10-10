@@ -3,31 +3,26 @@
 #include <exception>
 #include <stack>
 
-#include "functional.h"
-#include "promise.h"
+#include "../functional.h"
+#include "../promise.h"
 
 namespace cppgo {
 
 class PromiseBase::Impl {
-  friend class PromiseBase;
-  friend class AsyncFunctionBase::Impl;
-
  public:
-  void init(std::coroutine_handle<> handler) { _handler = handler; }
-  void unhandled_exception() noexcept { _exception = std::current_exception(); }
-  std::any& any() { return _value; }
-
- protected:
+  void init(std::coroutine_handle<> handler) { this->handler = handler; }
+  void unhandled_exception() noexcept { this->error = std::current_exception(); }
+  std::any& any() { return this->value; }
   std::suspend_always _yield_any(std::any&& value) {
-    _value = std::move(value);
+    this->value = std::move(value);
     return {};
   }
 
- private:
-  std::coroutine_handle<> _handler = nullptr;
-  std::exception_ptr _exception = nullptr;
-  std::any _value = nullptr;
-  std::shared_ptr<std::stack<std::coroutine_handle<>>> _stack = nullptr;
+ public:
+  std::coroutine_handle<> handler = nullptr;
+  std::exception_ptr error = nullptr;
+  std::any value = nullptr;
+  std::shared_ptr<std::stack<std::coroutine_handle<>>> stack = nullptr;
 };
 
 }  // namespace cppgo

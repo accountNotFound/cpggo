@@ -1,5 +1,6 @@
-#include "runtime_goroutine_impl.h"
-#include "synchronize.h"
+#include "../mutex.h"
+
+#include "runtime/impl/goroutine_impl.h"
 #include "util/lock_free_queue.h"
 #include "util/spin_lock.h"
 
@@ -19,7 +20,7 @@ class Mutex::Impl {
       if (_locked_flag) {
         DEBUG("routine {%u} lock failed -> blocked", _ctx->current_goroutine().id());
         _blocked_queue.enqueue(&_ctx->current_goroutine());
-        __detail::unwrap(_ctx->current_goroutine()).set_blocked();
+        __detail::impl(_ctx->current_goroutine()).set_blocked();
         _mtx.unlock();
         co_await std::suspend_always{};
       } else {
@@ -36,14 +37,14 @@ class Mutex::Impl {
     auto [next_goroutine, ok] = _blocked_queue.dequeue();
     if (ok) {
       DEBUG("routine {%u} is notified -> runnable", next_goroutine->id());
-      __detail::unwrap(*next_goroutine).set_runnable();
+      __detail::impl(*next_goroutine).set_runnable();
     }
     _locked_flag = false;
   }
 
  private:
-  SpinLock _mtx;
   Context* _ctx;
+  SpinLock _mtx;
   LockFreeQueue<Goroutine*> _blocked_queue;
   bool _locked_flag = false;
 };

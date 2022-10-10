@@ -1,7 +1,8 @@
+#include "../channel.h"
+
 #include <queue>
 
-#include "runtime_goroutine_impl.h"
-#include "synchronize.h"
+#include "runtime/impl/goroutine_impl.h"
 #include "util/lock_free_queue.h"
 #include "util/spin_lock.h"
 
@@ -21,7 +22,7 @@ class ChannelBase::Impl {
       if (_buffer.size() == _capacity) {
         DEBUG("routine {%d} send failed", _ctx->current_goroutine().id());
         _blocked_writers.enqueue(&_ctx->current_goroutine());
-        __detail::unwrap(_ctx->current_goroutine()).set_blocked();
+        __detail::impl(_ctx->current_goroutine()).set_blocked();
         _mtx.unlock();
         co_await std::suspend_always{};
       } else {
@@ -41,7 +42,7 @@ class ChannelBase::Impl {
       if (_buffer.size() == 0) {
         DEBUG("routine {%d} recv failed", _ctx->current_goroutine().id());
         _blocked_readers.enqueue(&_ctx->current_goroutine());
-        __detail::unwrap(_ctx->current_goroutine()).set_blocked();
+        __detail::impl(_ctx->current_goroutine()).set_blocked();
         _mtx.unlock();
         co_await std::suspend_always{};
       } else {
@@ -60,7 +61,7 @@ class ChannelBase::Impl {
  private:
   void _notify_one(LockFreeQueue<Goroutine*>& blocked_queue) {
     auto [next_goroutine, ok] = blocked_queue.dequeue();
-    if (ok) __detail::unwrap(*next_goroutine).set_runnable();
+    if (ok) __detail::impl(*next_goroutine).set_runnable();
   }
 
  private:

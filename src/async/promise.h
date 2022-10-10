@@ -4,13 +4,13 @@
 #include <coroutine>
 #include <memory>
 
+#include "util/unwrapper.h"
+
 namespace cppgo {
 
-class PromiseBase;
-class AsyncFunctionBase;
-
 class PromiseBase {
-  friend class AsyncFunctionBase;
+  template <__detail::HasImpl T>
+  friend typename T::Impl& __detail::impl(T& wrapper);
 
  public:
   PromiseBase();

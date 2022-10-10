@@ -35,6 +35,7 @@ AsyncFunction<void> biz() {
 
 int main() {
   auto e = biz();
+  printf("async test start\n");
   for (e.init(); !e.done(); e.resume()) {
     printf("main\n");
   }

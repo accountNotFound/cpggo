@@ -3,8 +3,9 @@
 #include <chrono>
 #include <string>
 
-#include "core/runtime.h"
-#include "core/synchronize.h"
+#include "runtime/context.h"
+#include "synchronize/channel.h"
+#include "synchronize/mutex.h"
 
 using namespace cppgo;
 

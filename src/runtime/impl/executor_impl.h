@@ -2,7 +2,8 @@
 
 #include <thread>
 
-#include "runtime_context_impl.h"
+#include "../context.h"
+#include "../executor.h"
 #include "util/spin_lock.h"
 
 namespace cppgo {
@@ -26,9 +27,11 @@ class Executor::Impl {
 
  private:
   size_t _id;
-  Context::Impl* _ctx_impl;
   std::thread _thread;
   bool _stop_flag = false;
+
+ private:
+  Context* _ctx;
 };
 
 }  // namespace cppgo
