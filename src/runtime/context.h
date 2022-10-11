@@ -23,6 +23,7 @@ class Context {
   Goroutine& current_goroutine();
   void start();
   void wait_until(const std::function<bool()>& pred);
+  void stop();
 
  public:
   class Impl;

@@ -44,6 +44,7 @@ int main() {
     ctx.go(foo());
   }
   ctx.wait_until([]() { return value >= foo_bar_num * loop_num * std::string(data).size(); });
+  ctx.stop();
   printf("value=%d\n", value);
   if (value != foo_bar_num * loop_num * std::string(data).size()) {
     return -1;

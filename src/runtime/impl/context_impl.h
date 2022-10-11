@@ -59,6 +59,7 @@ class Context::Impl {
   Goroutine& current_goroutine() { return *this_thread_goroutine; }
   void start();
   void wait_until(const std::function<bool()>& pred);
+  void stop();
 
  public:
   static thread_local Goroutine* this_thread_goroutine;

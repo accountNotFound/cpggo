@@ -11,11 +11,11 @@ enable_testing()
 add_subdirectory("src")
 add_subdirectory("test")
 
-add_test("nested-call" coroutine_test)
+# add_test("nested-call" coroutine_test)
 add_test("spinlock-benchmark" spinlock_test)
 add_test("queue-benchmark" queue_test)
 add_test("mutex-benchmark" mutex_test)
-# add_test("multi-channel-benchmark" multi_channel_test)
+add_test("multi-channel-benchmark" multi_channel_test)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -29,6 +29,9 @@ void Context::Impl::start() {
 
 void Context::Impl::wait_until(const std::function<bool()>& pred) {
   while (!pred()) std::this_thread::sleep_for(std::chrono::milliseconds(50));
+}
+
+void Context::Impl::stop() {
   for (auto& exec : executors) __detail::impl(exec).stop();
   for (auto& exec : executors) __detail::impl(exec).join();
 }
@@ -44,5 +47,7 @@ Goroutine& Context::go(AsyncFunctionBase&& fn) { return _impl->go(std::move(fn))
 void Context::start() { _impl->start(); }
 
 void Context::wait_until(const std::function<bool()>& pred) { _impl->wait_until(pred); }
+
+void Context::stop() { _impl->stop(); }
 
 }  // namespace cppgo

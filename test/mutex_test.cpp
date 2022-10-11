@@ -42,6 +42,7 @@ int main() {
     ctx.go(foo());
   }
   ctx.wait_until([]() { return value >= coroutine_num * loop_num; });
+  ctx.stop();
   printf("value=%d\n", value);
   if (value != coroutine_num * loop_num) {
     return -1;
