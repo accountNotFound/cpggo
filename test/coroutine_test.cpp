@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "async/functional.h"
+#include "coroutine/functional.h"
 
 using namespace cppgo;
 
@@ -35,9 +35,9 @@ AsyncFunction<void> biz() {
 
 int main() {
   auto e = biz();
-  printf("async test start\n");
+  printf("coroutine test start\n");
   for (e.init(); !e.done(); e.resume()) {
     printf("main\n");
   }
-  printf("async test end\n");
+  printf("coroutine test end\n");
 }

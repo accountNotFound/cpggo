@@ -3,7 +3,7 @@
 #include <functional>
 #include <memory>
 
-#include "async/functional.h"
+#include "coroutine/functional.h"
 #include "util/unwrapper.h"
 
 namespace cppgo {

@@ -1,4 +1,4 @@
-add_subdirectory("async/impl")
+add_subdirectory("coroutine/impl")
 add_subdirectory("util/impl")
 add_subdirectory("runtime/impl")
 add_subdirectory("synchronize/impl")

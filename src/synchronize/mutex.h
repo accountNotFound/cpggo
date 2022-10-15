@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "async/functional.h"
+#include "coroutine/functional.h"
 #include "runtime/context.h"
 
 namespace cppgo {
