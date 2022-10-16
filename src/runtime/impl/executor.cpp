@@ -4,6 +4,8 @@
 // #define USE_DEBUG
 #include "util/log.h"
 
+#define LOOP_INTERVAL 50
+
 namespace cppgo {
 
 SpinLock Executor::Impl::_cls_mtx;
@@ -19,7 +21,7 @@ void Executor::Impl::_loop() {
     auto [routine, ok] = _ctx_impl->runnable_queue.dequeue();
     if (!ok) {
       DEBUG("executor {%d} sleep", 0);
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_INTERVAL));
       continue;
     }
     _ctx_impl->this_thread_goroutine = routine;

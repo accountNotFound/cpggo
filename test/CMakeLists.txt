@@ -14,3 +14,6 @@ target_link_libraries(mutex_test cppgo_coroutine cppgo_runtime cppgo_synchronize
 
 add_executable(multi_channel_test multi_channel_test.cpp)
 target_link_libraries(multi_channel_test cppgo_coroutine cppgo_runtime cppgo_synchronize cppgo_util)
+
+add_executable(epoll_timer_test epoll_timer_test.cpp)
+target_link_libraries(epoll_timer_test cppgo_event cppgo_coroutine cppgo_runtime cppgo_synchronize cppgo_util)

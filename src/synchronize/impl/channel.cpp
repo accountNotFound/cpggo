@@ -58,6 +58,15 @@ class ChannelBase::Impl {
     co_return std::move(res);
   }
 
+  bool send_any_noblock(std::any&& value) {
+    std::unique_lock guard(_mtx);
+    if (_buffer.size() == _capacity) return false;
+    DEBUG("routine {%d} send ok", _ctx->current_goroutine().id());
+    _buffer.push(std::move(value));
+    _notify_one(_blocked_readers);
+    return true;
+  }
+
  private:
   void _notify_one(LockFreeQueue<Goroutine*>& blocked_queue) {
     auto [next_goroutine, ok] = blocked_queue.dequeue();
@@ -79,5 +88,7 @@ ChannelBase::~ChannelBase() = default;
 AsyncFunction<void> ChannelBase::send_any(std::any&& value) { co_await _impl->send_any(std::move(value)); }
 
 AsyncFunction<std::any> ChannelBase::recv_any() { co_return (co_await _impl->recv_any()); }
+
+bool ChannelBase::send_any_noblock(std::any&& value) { return _impl->send_any_noblock(std::move(value)); }
 
 }  // namespace cppgo

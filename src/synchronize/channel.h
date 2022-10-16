@@ -17,6 +17,7 @@ class ChannelBase {
  public:
   AsyncFunction<void> send_any(std::any&& value);
   AsyncFunction<std::any> recv_any();
+  bool send_any_noblock(std::any&& value);
 
  private:
   class Impl;
@@ -38,6 +39,8 @@ class Channel : public ChannelBase {
       co_return std::any_cast<T>(std::move(res));
     }
   }
+
+  bool send_noblock(T&& value) { return this->send_any_noblock(std::move(value)); }
 };
 
 }  // namespace cppgo
