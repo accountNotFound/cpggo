@@ -1,49 +1,50 @@
 #pragma once
 
+#include <any>
 #include <coroutine>
-#include <exception>
-#include <stack>
+#include <memory>
+
+#include "util/unwrapper.h"
 
 namespace cppgo {
 
-using RawHandler = std::coroutine_handle<>;
+class PromiseBase {
+  template <__detail::HasImpl T>
+  friend typename T::Impl& __detail::impl(T& wrapper);
 
-struct PromiseBase {
  public:
-  PromiseBase() = default;
-  ~PromiseBase() {
-    if (!caller_ && !p_stack_) {
-      delete p_stack_;
-    }
-  }
+  PromiseBase();
+  PromiseBase(PromiseBase&) = delete;
+  PromiseBase(PromiseBase&&) = default;
+  virtual ~PromiseBase();
 
-  std::suspend_always initial_suspend() const { return {}; }
-  std::suspend_always final_suspend() const noexcept { return {}; }
-  void unhandled_exception() noexcept { exception_ = std::current_exception(); }
+ public:
+  void init(std::coroutine_handle<> handler);
+  std::suspend_always initial_suspend() { return {}; }
+  std::suspend_always final_suspend() noexcept { return {}; }
+  void unhandled_exception() noexcept;
+  std::any& any();
 
  protected:
-  std::stack<RawHandler>* p_stack_ = nullptr;
-  RawHandler caller_ = nullptr;
-  std::exception_ptr exception_;
+  std::suspend_always _yield_any(std::any&& value);
+
+ public:
+  class Impl;
+
+ private:
+  std::unique_ptr<Impl> _impl;
 };
 
 template <typename T>
-struct ValuePromiseBase : public PromiseBase {
+class Promise : public PromiseBase {
  public:
-  ValuePromiseBase() = default;
-
-  void return_value(T& value) { value_ = value; }
-  void return_value(T&& value) { value_ = std::move(value); }
-
- protected:
-  T value_;
+  std::suspend_always yield_value(T&& value) { return this->_yield_any(value); }
+  void return_value(T&& value) { this->_yield_any(std::move(value)); }
 };
 
 template <>
-struct ValuePromiseBase<void> : public PromiseBase {
+class Promise<void> : public PromiseBase {
  public:
-  ValuePromiseBase() = default;
-
   void return_void() {}
 };
 

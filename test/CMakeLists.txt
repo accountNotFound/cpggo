@@ -1,17 +1,19 @@
 include_directories("../src")
 
 add_executable(coroutine_test coroutine_test.cpp)
+target_link_libraries(coroutine_test cppgo_coroutine)
 
 add_executable(spinlock_test spinlock_test.cpp)
+target_link_libraries(spinlock_test cppgo_util)
 
-add_executable(context_test context_test.cpp)
-target_link_libraries(context_test context)
+add_executable(queue_test queue_test.cpp)
+target_link_libraries(queue_test cppgo_util)
 
-add_executable(channel_test channel_test.cpp)
-target_link_libraries(channel_test context)
+add_executable(mutex_test mutex_test.cpp)
+target_link_libraries(mutex_test cppgo_coroutine cppgo_runtime cppgo_synchronize cppgo_util)
 
 add_executable(multi_channel_test multi_channel_test.cpp)
-target_link_libraries(multi_channel_test context)
+target_link_libraries(multi_channel_test cppgo_coroutine cppgo_runtime cppgo_synchronize cppgo_util)
 
-add_executable(sleep_test sleep_test.cpp)
-target_link_libraries(sleep_test context event)
+add_executable(epoll_timer_test epoll_timer_test.cpp)
+target_link_libraries(epoll_timer_test cppgo_event cppgo_coroutine cppgo_runtime cppgo_synchronize cppgo_util)

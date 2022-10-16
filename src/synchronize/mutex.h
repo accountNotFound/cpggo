@@ -1,21 +1,25 @@
 #pragma once
 
-#include "context/header.h"
-#include "context/monitor.h"
+#include <memory>
+
+#include "coroutine/functional.h"
+#include "runtime/context.h"
 
 namespace cppgo {
 
 class Mutex {
  public:
-  Mutex(Context* ctx) : ctx_(ctx), resource_(1), monitor_(ctx_, &resource_) {}
+  Mutex(Context& ctx);
+  Mutex(const Mutex& rhs) = default;
+  ~Mutex();
 
-  AsyncFunction<void> lock() { co_await monitor_.enter(); }
-  void unlock() { monitor_.exit(); }
+ public:
+  AsyncFunction<void> lock();
+  void unlock();
 
  private:
-  Context* ctx_;
-  Resource resource_;
-  Monitor monitor_;
+  class Impl;
+  std::shared_ptr<Impl> _impl;
 };
 
 }  // namespace cppgo
