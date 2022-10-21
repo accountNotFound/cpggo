@@ -1,11 +1,9 @@
+#pragma once
+
 #include "runtime/context.h"
 #include "synchronize/channel.h"
 
 namespace cppgo {
-
-enum Event { IN = 0x1, OUT = 0x2, ERR = 0x4, ONESHOT = 0x8 };
-
-extern Event operator|(Event a, Event b);
 
 struct Fd {
  public:
@@ -20,16 +18,27 @@ struct Fd {
   size_t _fd = -1;
 };
 
-struct Signal : public Fd {
+class Event {
  public:
-  Signal(Context& ctx, const Fd& fd) : Fd(fd), _chan(ctx, 1) {}
+  enum Type { IN = 0x1, OUT = 0x2, ERR = 0x4, ONESHOT = 0x8 };
 
-  AsyncFunction<void> wait() { co_await _chan.recv(); }
-  void notify() { _chan.send_noblock(true); }
+ public:
+  Event() = default;
+  Event(Context& ctx, Fd fd, Type type);
+  ~Event();
+
+ public:
+  Fd fd();
+  Type type();
+  Channel<bool>& chan();
+  AsyncFunction<void> wait();
 
  private:
-  Channel<bool> _chan;
+  class Impl;
+  std::shared_ptr<Impl> _impl;
 };
+
+extern Event::Type operator|(Event::Type a, Event::Type b);
 
 }  // namespace cppgo
 

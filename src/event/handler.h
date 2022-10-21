@@ -18,11 +18,10 @@ class EventHandler {
   EventHandler(EventHandler&& rhs);
   ~EventHandler();
 
-  void add(const Fd& fd, Event listen_on);
-  void mod(const Fd& fd, Event listen_on);
-  void del(const Fd& fd);
+  void add(Fd fd, Event& listen_on);
+  void mod(Fd fd, Event& listen_on);
+  void del(Fd fd);
 
-  AsyncFunction<void> wait(const Fd& fd);
   void loop_until(const std::function<bool()>& pred);
 
  private:
