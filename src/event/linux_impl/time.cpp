@@ -6,26 +6,25 @@ namespace cppgo {
 
 class Timer::Impl {
  public:
-  Impl(Context& ctx, unsigned long long millisec) : _ev_hdlr(&ctx.get<EventHandler>()), _chan(ctx, 1) {
-    _fd = Fd(timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK));
+  Impl(Context& ctx, unsigned long long millisec) : _handler(&ctx.get<EventHandler>()) {
+    _fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
     itimerspec ts;
     ts.it_interval = timespec{0, 0};
     ts.it_value = timespec{(long)millisec / 1000, ((long)millisec % 1000) * 1000000};
-    timerfd_settime(size_t(_fd), 0, &ts, nullptr);
-    _ev_hdlr->add(_fd, Event::IN);
+    timerfd_settime(_fd, 0, &ts, nullptr);
+
+    _event = Event(ctx, _fd, Event::IN | Event::ONESHOT);
+    _handler->add(_fd, _event);
   }
 
-  AsyncFunction<void> wait() {
-    co_await _ev_hdlr->wait(_fd);
-    _chan.send_noblock(true);
-  }
+  AsyncFunction<void> wait() { co_await _event.wait(); }
 
-  Channel<bool>& chan() { return _chan; }
+  Channel<bool>& chan() { return _event.chan(); }
 
  private:
-  EventHandler* _ev_hdlr;
+  EventHandler* _handler;
   Fd _fd;
-  Channel<bool> _chan;
+  Event _event;
 };
 
 AsyncFunction<void> sleep(Context& ctx, unsigned long long millisec) { co_await Timer(ctx, millisec).wait(); }

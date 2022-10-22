@@ -12,10 +12,10 @@
 using namespace cppgo;
 
 constexpr int thread_num = 10;
-constexpr int foo_num = 1000;
-constexpr int loop_num = 10;
+constexpr int foo_num = 3000;
+constexpr int loop_num = 100;
 
-constexpr long sleep_millisec = 500;
+constexpr long sleep_millisec = 50;
 
 Context ctx(thread_num);
 

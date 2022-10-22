@@ -25,9 +25,10 @@ void Executor::Impl::_loop() {
       continue;
     }
     _ctx_impl->this_thread_goroutine = routine;
-    DEBUG("executor {%d} start run routine {%d}", id(), routine->id());
+    size_t gid = routine->id();  // if DEBUG, use this copy since routine pointer may be destroy after run
+    DEBUG("executor {%d} start run routine {%d}", id(), gid);
     __detail::impl(*routine).run();
-    DEBUG("executor {%d} run routine {%d} end", id(), routine->id());
+    DEBUG("executor {%d} run routine {%d} end", id(), gid);
     _ctx_impl->this_thread_goroutine = nullptr;
 
     // finish goroutines have been already destroy in Goroutine::Impl::run()
