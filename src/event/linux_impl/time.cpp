@@ -7,11 +7,11 @@ namespace cppgo {
 class Timer::Impl {
  public:
   Impl(Context& ctx, unsigned long long millisec) : _handler(&ctx.get<EventHandler>()) {
-    _fd = Fd(timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK));
+    _fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
     itimerspec ts;
     ts.it_interval = timespec{0, 0};
     ts.it_value = timespec{(long)millisec / 1000, ((long)millisec % 1000) * 1000000};
-    timerfd_settime(size_t(_fd), 0, &ts, nullptr);
+    timerfd_settime(_fd, 0, &ts, nullptr);
 
     _event = Event(ctx, _fd, Event::IN | Event::ONESHOT);
     _handler->add(_fd, _event);

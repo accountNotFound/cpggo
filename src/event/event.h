@@ -5,18 +5,7 @@
 
 namespace cppgo {
 
-struct Fd {
- public:
-  Fd() = default;
-  Fd(size_t opened_fd) : _fd(opened_fd) {}
-
-  size_t id() const { return _fd; }
-  operator size_t() const { return _fd; }
-  bool operator==(const Fd& rhs) const { return _fd == rhs._fd; }
-
- private:
-  size_t _fd = -1;
-};
+using Fd = size_t;
 
 class Event {
  public:
@@ -41,10 +30,3 @@ class Event {
 extern Event::Type operator|(Event::Type a, Event::Type b);
 
 }  // namespace cppgo
-
-template <typename T>
-requires std::convertible_to<T, cppgo::Fd>
-struct std::hash<T> {
- public:
-  size_t operator()(const T& fd) const { return size_t(fd); }
-};

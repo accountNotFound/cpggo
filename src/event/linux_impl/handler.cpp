@@ -24,17 +24,17 @@ class EventHandler::Impl {
     epoll_event listen;
     listen.events = _to_epoll(event);
     listen.data.ptr = &event;
-    epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, size_t(fd), &listen);
+    epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &listen);
   }
 
   void mod(Fd fd, Event& event) {
     epoll_event listen;
     listen.events = _to_epoll(event);
     listen.data.ptr = &event;
-    epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, size_t(fd), &listen);
+    epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, fd, &listen);
   }
 
-  void del(Fd fd) { epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, size_t(fd), nullptr); }
+  void del(Fd fd) { epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, nullptr); }
 
   void loop_until(const std::function<bool()>& pred) {
     std::array<epoll_event, EPOLL_WAIT_MAX_SIZE> buffer;
