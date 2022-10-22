@@ -6,7 +6,7 @@ namespace cppgo {
 
 class Timer::Impl {
  public:
-  Impl(Context& ctx, unsigned long long millisec) : _ev_hdlr(&ctx.get<EventHandler>()) {
+  Impl(Context& ctx, unsigned long long millisec) : _handler(&ctx.get<EventHandler>()) {
     _fd = Fd(timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK));
     itimerspec ts;
     ts.it_interval = timespec{0, 0};
@@ -14,7 +14,7 @@ class Timer::Impl {
     timerfd_settime(size_t(_fd), 0, &ts, nullptr);
 
     _event = Event(ctx, _fd, Event::IN | Event::ONESHOT);
-    _ev_hdlr->add(_fd, _event);
+    _handler->add(_fd, _event);
   }
 
   AsyncFunction<void> wait() { co_await _event.wait(); }
@@ -22,7 +22,7 @@ class Timer::Impl {
   Channel<bool>& chan() { return _event.chan(); }
 
  private:
-  EventHandler* _ev_hdlr;
+  EventHandler* _handler;
   Fd _fd;
   Event _event;
 };
